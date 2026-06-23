@@ -172,7 +172,7 @@ function queueScrollReveal() {
 
 function initScrollReveal() {
   const items = [...app.querySelectorAll(REVEAL_SELECTOR)]
-    .filter((item) => !item.classList.contains('reveal-on-scroll') && !item.hidden && item.offsetParent !== null);
+    .filter((item) => !item.closest('[data-no-reveal]') && !item.classList.contains('reveal-on-scroll') && !item.hidden && item.offsetParent !== null);
 
   if (!items.length) return;
 
@@ -480,12 +480,27 @@ function renderAdminProjects() {
 function renderAdminProjectEditor(projectId) {
   const project = projectId ? state.projects.find((item) => item.id === projectId) : {};
   if (projectId && !project) return renderNotFound();
-  const elements = projectId ? state.elements.filter((element) => element.project_id === projectId).sort(bySort) : [];
+
+  const allElements = projectId ? state.elements.filter((element) => element.project_id === projectId).sort(bySort) : [];
+  const pageSize = 10;
+  const requestedPage = Number(new URLSearchParams(location.search).get('pagina') || 1);
+  const safeRequestedPage = Number.isFinite(requestedPage) ? Math.floor(requestedPage) : 1;
+  const totalPages = Math.max(1, Math.ceil(allElements.length / pageSize));
+  const currentPage = Math.min(Math.max(1, safeRequestedPage), totalPages);
+  const pageStart = (currentPage - 1) * pageSize;
+  const elements = allElements.slice(pageStart, pageStart + pageSize);
   const rows = elements.map((element) => adminGoRow({
     title: element.title,
     meta: `${categoryName(element.category_id)} - ${element.active ? 'Activo' : 'Inactivo'}`,
-    href: routePath(`/admin/elementos/${element.id}/`)
+    href: routePath(`/admin/elementos/${element.id}/`),
+    compact: true
   })).join('');
+  const pagination = projectId && allElements.length > pageSize ? adminPagination({
+    currentPage,
+    totalPages,
+    totalItems: allElements.length,
+    baseHref: routePath(`/admin/proyectos/${projectId}/`)
+  }) : '';
 
   adminFrame(
     projectId ? `Proyecto: ${project.name}` : 'Nuevo proyecto',
@@ -494,12 +509,16 @@ function renderAdminProjectEditor(projectId) {
       <a class="back-link" href="${routePath('/admin/')}">Volver a proyectos</a>
       ${projectId ? projectReadOnly(project) : projectForm(project)}
       ${projectId ? `
-        <section class="admin-list-panel">
+        <section class="admin-list-panel is-compact" data-no-reveal>
           <div class="list-title-row">
-            <h2>Elementos del proyecto</h2>
+            <div>
+              <h2>Elementos del proyecto</h2>
+              <p class="list-summary">${allElements.length ? `${pageStart + 1}-${pageStart + elements.length} de ${allElements.length}` : 'Sin elementos'}</p>
+            </div>
             <a class="button primary" href="${routePath(`/admin/proyectos/${projectId}/elementos/nuevo/`)}">Nuevo elemento</a>
           </div>
           ${rows || emptyState('Este proyecto todavia no tiene elementos.')}
+          ${pagination}
         </section>
       ` : ''}
     `
@@ -679,9 +698,22 @@ function option(value, label, selected) {
   return `<option value="${escapeAttr(value)}" ${selected === value ? 'selected' : ''}>${escapeHtml(label)}</option>`;
 }
 
-function adminGoRow({ title, meta, href }) {
+function adminPagination({ currentPage, totalPages, totalItems, baseHref }) {
+  const pageHref = (page) => `${baseHref}?pagina=${page}`;
   return `
-    <article class="admin-row is-clickable" data-command="go" data-href="${escapeAttr(href)}">
+    <nav class="admin-pagination" aria-label="Paginacion de elementos">
+      <span>Pagina ${currentPage} de ${totalPages} - ${totalItems} elementos</span>
+      <div>
+        ${currentPage > 1 ? `<a class="button secondary" href="${pageHref(currentPage - 1)}">Anterior</a>` : '<span class="button secondary is-disabled">Anterior</span>'}
+        ${currentPage < totalPages ? `<a class="button secondary" href="${pageHref(currentPage + 1)}">Siguiente</a>` : '<span class="button secondary is-disabled">Siguiente</span>'}
+      </div>
+    </nav>
+  `;
+}
+
+function adminGoRow({ title, meta, href, compact = false }) {
+  return `
+    <article class="admin-row is-clickable${compact ? ' is-compact' : ''}" data-command="go" data-href="${escapeAttr(href)}">
       <div><strong>${escapeHtml(title)}</strong><span>${escapeHtml(meta || '')}</span></div>
       <a class="button secondary" href="${escapeAttr(href)}" aria-label="Ir a ${escapeAttr(title)}">Ir</a>
     </article>
