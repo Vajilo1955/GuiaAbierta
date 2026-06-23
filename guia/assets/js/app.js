@@ -8,6 +8,7 @@ const lightbox = document.querySelector('[data-lightbox]');
 const BASE_PATH = getBasePath();
 const REVEAL_SELECTOR = [
   '.hero-content',
+  '.phone-mockup',
   '.info-block',
   '.page-head',
   '.project-card',
@@ -228,7 +229,6 @@ function categoryName(id) {
 function renderLanding() {
   app.innerHTML = `
     <section class="hero">
-      <div class="hero-media" aria-hidden="true"></div>
       <div class="hero-content">
         <p class="eyebrow">Guia audiovisual accesible</p>
         <h1>GuiaAbierta</h1>
@@ -236,6 +236,28 @@ function renderLanding() {
         <div class="actions">
           <a class="button primary" href="${routePath('/proyectos/')}">Ver guias disponibles</a>
           <a class="button secondary" href="${routePath('/admin/')}">Acceso administradores</a>
+        </div>
+      </div>
+      <div class="phone-mockup" aria-label="Vista previa movil de GuiaAbierta">
+        <div class="phone-frame">
+          <div class="phone-speaker" aria-hidden="true"></div>
+          <div class="phone-screen">
+            <div class="phone-appbar">
+              <span class="phone-logo">GA</span>
+              <span>GuiaAbierta</span>
+            </div>
+            <div class="phone-hero-card">
+              <p class="tag">Guia local</p>
+              <h2>Utrera</h2>
+              <p>Lugares, mapas, audios e informacion clara.</p>
+            </div>
+            <div class="phone-search"></div>
+            <div class="phone-list">
+              <article><span></span><div><strong>Arco de la Villa</strong><small>Monumentos</small></div></article>
+              <article><span></span><div><strong>Parque de Consolacion</strong><small>Zonas verdes</small></div></article>
+              <article><span></span><div><strong>Plaza del Altozano</strong><small>Centro urbano</small></div></article>
+            </div>
+          </div>
         </div>
       </div>
     </section>

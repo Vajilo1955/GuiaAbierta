@@ -112,30 +112,17 @@ button, a { -webkit-tap-highlight-color: transparent; }
 }
 
 .hero {
-  position: relative;
   display: grid;
-  min-height: calc(100vh - 68px);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
   align-items: center;
-  overflow: hidden;
-  isolation: isolate;
-}
-.hero::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(90deg, rgba(4, 24, 25, .88), rgba(4, 24, 25, .56), rgba(4, 24, 25, .18));
-}
-.hero-media {
-  position: absolute;
-  inset: 0;
-  z-index: -2;
-  background: url("https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1800&q=82") center/cover;
+  gap: clamp(2rem, 6vw, 5rem);
+  min-height: calc(100vh - 68px);
+  width: min(1120px, calc(100% - 2rem));
+  margin-inline: auto;
+  padding: clamp(3rem, 7vw, 6rem) 0;
 }
 .hero-content {
-  width: min(780px, calc(100% - 2rem));
-  margin-left: clamp(1rem, 7vw, 6rem);
-  color: #fff;
+  color: var(--ink);
 }
 .hero h1, .page-head h1, .detail h1, .project-hero h1 {
   margin: .25rem 0 .8rem;
@@ -150,8 +137,97 @@ button, a { -webkit-tap-highlight-color: transparent; }
   font-weight: 800;
   text-transform: uppercase;
 }
-.hero .eyebrow { color: #f9c74f; }
+.hero .eyebrow { color: var(--accent); }
 
+.phone-mockup {
+  justify-self: center;
+  width: min(100%, 360px);
+}
+.phone-frame {
+  position: relative;
+  padding: 1rem;
+  border: 1px solid #223235;
+  border-radius: 34px;
+  background: #13272b;
+  box-shadow: 0 24px 60px rgba(16, 32, 34, .22);
+}
+.phone-speaker {
+  width: 72px;
+  height: 6px;
+  margin: 0 auto .75rem;
+  border-radius: 999px;
+  background: #5b7074;
+}
+.phone-screen {
+  display: grid;
+  gap: .85rem;
+  min-height: 560px;
+  padding: 1rem;
+  overflow: hidden;
+  border-radius: 24px;
+  background: var(--paper);
+}
+.phone-appbar {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  color: var(--ink);
+  font-weight: 900;
+}
+.phone-logo {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font-size: .82rem;
+}
+.phone-hero-card {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+.phone-hero-card h2 {
+  margin: .15rem 0 .35rem;
+  font-size: 2rem;
+  line-height: 1;
+}
+.phone-hero-card p { margin: 0; font-size: .95rem; }
+.phone-search {
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+.phone-list {
+  display: grid;
+  gap: .65rem;
+}
+.phone-list article {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: .75rem;
+  align-items: center;
+  padding: .65rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+.phone-list article > span {
+  display: block;
+  width: 54px;
+  height: 54px;
+  border-radius: 8px;
+  background: #dce9e4;
+}
+.phone-list strong,
+.phone-list small {
+  display: block;
+}
+.phone-list small { color: var(--muted); }
 .actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.35rem; }
 .actions.compact { margin-top: 1rem; }
 .button {
@@ -531,6 +607,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 @media (max-width: 920px) {
   .info-grid, .cards-grid, .admin-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero { grid-template-columns: 1fr; min-height: auto; }
+  .phone-mockup { width: min(100%, 340px); }
   .project-hero, .detail-head { grid-template-columns: 1fr; }
 }
 
@@ -551,9 +629,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
     box-shadow: var(--shadow);
   }
   .main-nav.is-open { display: flex; }
-  .hero { min-height: calc(92vh - 68px); }
-  .hero::after { background: rgba(4, 24, 25, .68); }
-  .hero-content { margin: 0 auto; }
+  .hero { padding-top: 2rem; }
+  .phone-screen { min-height: 500px; }
   .hero h1, .page-head h1, .detail h1, .project-hero h1 { font-size: 2.6rem; }
   .info-grid, .cards-grid, .admin-grid, .audio-list, .link-grid, .gallery.count-2, .gallery.count-3 { grid-template-columns: 1fr; }
   .actions .button { width: 100%; }
