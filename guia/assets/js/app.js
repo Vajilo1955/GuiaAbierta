@@ -135,7 +135,7 @@ function render() {
   if (path === '/proyectos/') return renderProjects();
   if (parts[0] === 'proyecto' && parts.length === 2) return renderProject(parts[1]);
   if (parts[0] === 'proyecto' && parts.length === 3) return renderElement(parts[1], parts[2]);
-  if (parts[0] === 'admin') return renderAdmin();
+  if (parts[0] === 'admin') return renderAdmin(parts);
   renderNotFound();
 }
 
@@ -328,7 +328,7 @@ function renderLinks(links) {
   `).join('')}</div>`;
 }
 
-async function renderAdmin() {
+async function renderAdmin(parts = []) {
   state.session = await getSession();
   if (!state.session) {
     app.innerHTML = `
@@ -345,29 +345,148 @@ async function renderAdmin() {
     return;
   }
 
+  if (parts.length === 1) return renderAdminProjects();
+  if (parts[1] === 'proyectos' && parts.length === 2) return renderAdminProjects();
+  if (parts[1] === 'proyectos' && parts[2] === 'nuevo') return renderAdminProjectEditor();
+  if (parts[1] === 'proyectos' && parts[2] && parts.length === 3) return renderAdminProjectEditor(parts[2]);
+  if (parts[1] === 'proyectos' && parts[2] && parts[3] === 'elementos' && parts[4] === 'nuevo') return renderAdminElementEditor(null, parts[2]);
+  if (parts[1] === 'elementos' && parts[2] && parts.length === 3) return renderAdminElementEditor(parts[2]);
+  if (parts[1] === 'elementos' && parts[2] && parts[3] === 'media' && parts[4] === 'nuevo') return renderAdminMediaEditor(parts[2]);
+  if (parts[1] === 'elementos' && parts[2] && parts[3] === 'media' && parts[4] && parts[5]) return renderAdminMediaEditor(parts[2], parts[4], parts[5]);
+  renderNotFound();
+}
+
+function adminFrame(title, subtitle, body, actions = '') {
   app.innerHTML = `
     <section class="admin-shell">
       <div class="admin-head">
-        <div><p class="eyebrow">Panel</p><h1>Administracion</h1><p>${escapeHtml(state.session.user.email)}</p></div>
-        <button class="button secondary" type="button" data-command="logout">Cerrar sesion</button>
+        <div>
+          <p class="eyebrow">Administracion</p>
+          <h1>${escapeHtml(title)}</h1>
+          <p>${escapeHtml(subtitle || state.session.user.email)}</p>
+        </div>
+        <div class="admin-head-actions">
+          ${actions}
+          <button class="button secondary" type="button" data-command="logout">Cerrar sesion</button>
+        </div>
       </div>
-      <div class="admin-grid">
-        ${projectForm()}
-        ${elementForm()}
-        ${mediaForm()}
-      </div>
-      <section class="admin-lists">
-        <h2>Contenido actual</h2>
-        ${adminList()}
-      </section>
+      ${body}
     </section>
   `;
+}
+
+function renderAdminProjects() {
+  const rows = state.projects.sort(bySort).map((project) => adminRow({
+    title: project.name,
+    meta: project.active ? 'Activo' : 'Inactivo',
+    editHref: routePath(`/admin/proyectos/${project.id}/`),
+    deleteTable: 'guia_projects',
+    deleteId: project.id,
+    deleteLabel: project.name,
+    deleteRedirect: routePath('/admin/')
+  })).join('');
+
+  adminFrame(
+    'Proyectos',
+    'Gestiona las guias disponibles.',
+    `
+      <div class="admin-toolbar">
+        <a class="button primary" href="${routePath('/admin/proyectos/nuevo/')}">Nuevo proyecto</a>
+      </div>
+      <section class="admin-list-panel">
+        ${rows || emptyState('Todavia no hay proyectos creados.')}
+      </section>
+    `
+  );
+}
+
+function renderAdminProjectEditor(projectId) {
+  const project = projectId ? state.projects.find((item) => item.id === projectId) : {};
+  if (projectId && !project) return renderNotFound();
+  const elements = projectId ? state.elements.filter((element) => element.project_id === projectId).sort(bySort) : [];
+  const rows = elements.map((element) => adminRow({
+    title: element.title,
+    meta: `${categoryName(element.category_id)} - ${element.active ? 'Activo' : 'Inactivo'}`,
+    editHref: routePath(`/admin/elementos/${element.id}/`),
+    deleteTable: 'guia_elements',
+    deleteId: element.id,
+    deleteLabel: element.title,
+    deleteRedirect: routePath(`/admin/proyectos/${projectId}/`)
+  })).join('');
+
+  adminFrame(
+    projectId ? `Proyecto: ${project.name}` : 'Nuevo proyecto',
+    projectId ? 'Edita los datos del proyecto y sus elementos.' : 'Crea una nueva guia o localidad.',
+    `
+      <a class="back-link" href="${routePath('/admin/')}">Volver a proyectos</a>
+      ${projectForm(project)}
+      ${projectId ? `
+        <section class="admin-list-panel">
+          <div class="list-title-row">
+            <h2>Elementos del proyecto</h2>
+            <a class="button primary" href="${routePath(`/admin/proyectos/${projectId}/elementos/nuevo/`)}">Nuevo elemento</a>
+          </div>
+          ${rows || emptyState('Este proyecto todavia no tiene elementos.')}
+        </section>
+      ` : ''}
+    `
+  );
+}
+
+function renderAdminElementEditor(elementId, projectId) {
+  const element = elementId ? state.elements.find((item) => item.id === elementId) : { project_id: projectId };
+  if (elementId && !element) return renderNotFound();
+  const project = state.projects.find((item) => item.id === element.project_id);
+  if (!project) return renderNotFound();
+  const media = elementId ? mediaForElement(elementId) : [];
+  const rows = media.map((item) => adminRow({
+    title: item.title || mediaKindLabel(item.kind),
+    meta: `${mediaKindLabel(item.kind)} - ${item.meta || 'Sin detalle'}`,
+    editHref: routePath(`/admin/elementos/${elementId}/media/${item.kind}/${item.id}/`),
+    deleteTable: mediaTable(item.kind),
+    deleteId: item.id,
+    deleteLabel: item.title || mediaKindLabel(item.kind),
+    deleteRedirect: routePath(`/admin/elementos/${elementId}/`)
+  })).join('');
+
+  adminFrame(
+    elementId ? `Elemento: ${element.title}` : 'Nuevo elemento',
+    `Proyecto: ${project.name}`,
+    `
+      <a class="back-link" href="${routePath(`/admin/proyectos/${project.id}/`)}">Volver al proyecto</a>
+      ${elementForm(element)}
+      ${elementId ? `
+        <section class="admin-list-panel">
+          <div class="list-title-row">
+            <h2>Contenido multimedia</h2>
+            <a class="button primary" href="${routePath(`/admin/elementos/${elementId}/media/nuevo/`)}">Nuevo contenido</a>
+          </div>
+          ${rows || emptyState('Este elemento todavia no tiene contenido multimedia.')}
+        </section>
+      ` : ''}
+    `
+  );
+}
+
+function renderAdminMediaEditor(elementId, kind = 'image', mediaId = '') {
+  const element = state.elements.find((item) => item.id === elementId);
+  if (!element) return renderNotFound();
+  const item = mediaId ? mediaForElement(elementId).find((media) => media.kind === kind && media.id === mediaId) : { kind, element_id: elementId };
+  if (mediaId && !item) return renderNotFound();
+
+  adminFrame(
+    mediaId ? `Editar ${mediaKindLabel(kind).toLowerCase()}` : 'Nuevo contenido',
+    `Elemento: ${element.title}`,
+    `
+      <a class="back-link" href="${routePath(`/admin/elementos/${elementId}/`)}">Volver al elemento</a>
+      ${mediaForm(elementId, item)}
+    `
+  );
 }
 
 function projectForm(project = {}) {
   return `
     <form class="panel stack-form" data-action="save-project">
-      <h2>Proyecto</h2>
       <input type="hidden" name="id" value="${escapeAttr(project.id || '')}">
       <label>Nombre<input required name="name" value="${escapeAttr(project.name || '')}"></label>
       <label>Slug<input required name="slug" value="${escapeAttr(project.slug || '')}" placeholder="centro-historico"></label>
@@ -385,7 +504,6 @@ function elementForm(element = {}) {
   const categoryOptions = state.categories.map((category) => option(category.id, category.name, element.category_id)).join('');
   return `
     <form class="panel stack-form" data-action="save-element">
-      <h2>Elemento</h2>
       <input type="hidden" name="id" value="${escapeAttr(element.id || '')}">
       <label>Proyecto<select required name="project_id">${projectOptions}</select></label>
       <label>Categoria<select name="category_id">${categoryOptions}</select></label>
@@ -403,19 +521,30 @@ function elementForm(element = {}) {
   `;
 }
 
-function mediaForm() {
-  const elementOptions = state.elements.map((element) => option(element.id, element.title)).join('');
+function mediaForm(elementId, item = {}) {
+  const kind = item.kind || 'image';
+  const kindControl = item.id
+    ? `<input type="hidden" name="kind" value="${escapeAttr(kind)}"><label>Tipo<input value="${escapeAttr(mediaKindLabel(kind))}" disabled></label>`
+    : `<label>Tipo
+        <select name="kind">
+          <option value="image" ${kind === 'image' ? 'selected' : ''}>Imagen</option>
+          <option value="audio" ${kind === 'audio' ? 'selected' : ''}>Audio</option>
+          <option value="link" ${kind === 'link' ? 'selected' : ''}>Enlace</option>
+        </select>
+      </label>`;
   return `
     <form class="panel stack-form" data-action="save-media">
-      <h2>Imagen, audio o enlace</h2>
-      <label>Elemento<select required name="element_id">${elementOptions}</select></label>
-      <label>Tipo<select name="kind"><option value="image">Imagen</option><option value="audio">Audio</option><option value="link">Enlace</option></select></label>
-      <label>Titulo<input required name="title"></label>
-      <label>URL<input required name="url" type="url"></label>
-      <label>Idioma o tipo<input name="meta" placeholder="Espanol, Web oficial, Cita previa..."></label>
-      <label>Orden<input name="sort_order" type="number" value="0"></label>
+      <input type="hidden" name="id" value="${escapeAttr(item.id || '')}">
+      <input type="hidden" name="element_id" value="${escapeAttr(elementId)}">
+      ${kindControl}
+      <label>Titulo<input required name="title" value="${escapeAttr(item.title || '')}"></label>
+      <label>URL<input required name="url" type="url" value="${escapeAttr(item.url || '')}"></label>
+      <label>Miniatura de imagen<input name="thumbnail_url" type="url" value="${escapeAttr(item.thumbnail_url || '')}"></label>
+      <label>Idioma o tipo<input name="meta" value="${escapeAttr(item.meta || '')}" placeholder="Espanol, Web oficial, Cita previa..."></label>
+      <label>Duracion en segundos<input name="duration" type="number" value="${escapeAttr(item.duration || '')}"></label>
+      <label>Orden<input name="sort_order" type="number" value="${escapeAttr(item.sort_order || 0)}"></label>
       <p class="hint">Recomendado: imagenes WebP de hasta ${window.GUIA_CONFIG.maxImageMb} MB y audios MP3/M4A de hasta ${window.GUIA_CONFIG.maxAudioMb} MB. La compresion automatica queda preparada para una fase posterior.</p>
-      <button class="button primary" type="submit">Anadir recurso</button>
+      <button class="button primary" type="submit">Guardar contenido</button>
     </form>
   `;
 }
@@ -424,13 +553,21 @@ function option(value, label, selected) {
   return `<option value="${escapeAttr(value)}" ${selected === value ? 'selected' : ''}>${escapeHtml(label)}</option>`;
 }
 
-function adminList() {
+function adminRow({ title, meta, editHref, deleteTable, deleteId, deleteLabel, deleteRedirect }) {
   return `
-    <div class="admin-list">
-      ${state.projects.map((project) => `<article><strong>${escapeHtml(project.name)}</strong><span>${project.active ? 'Activo' : 'Inactivo'}</span><button class="button ghost" data-command="edit-project" data-id="${project.id}">Editar</button></article>`).join('')}
-      ${state.elements.map((element) => `<article><strong>${escapeHtml(element.title)}</strong><span>${categoryName(element.category_id)}</span><button class="button ghost" data-command="edit-element" data-id="${element.id}">Editar</button></article>`).join('')}
-    </div>
+    <article class="admin-row">
+      <div><strong>${escapeHtml(title)}</strong><span>${escapeHtml(meta || '')}</span></div>
+      <div class="row-actions">
+        <a class="icon-action" href="${escapeAttr(editHref)}" aria-label="Editar ${escapeAttr(title)}" title="Editar">${icon('edit')}</a>
+        <button class="icon-action danger" type="button" data-command="confirm-delete" data-table="${escapeAttr(deleteTable)}" data-id="${escapeAttr(deleteId)}" data-label="${escapeAttr(deleteLabel)}" data-redirect="${escapeAttr(deleteRedirect)}" aria-label="Borrar ${escapeAttr(title)}" title="Borrar">${icon('trash')}</button>
+      </div>
+    </article>
   `;
+}
+
+function icon(name) {
+  if (name === 'trash') return '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-.7 11H7.7L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z"/></svg>';
+  return '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m4 16.6 10.9-11L18.4 9 7.5 20H4v-3.4ZM16.3 4.2l1-1a1.6 1.6 0 0 1 2.3 0l1.2 1.2a1.6 1.6 0 0 1 0 2.3l-1 1-3.5-3.5Z"/></svg>';
 }
 
 async function handleAction(form) {
@@ -440,9 +577,24 @@ async function handleAction(form) {
     if (action === 'login') {
       state.session = await signIn(data.email, data.password);
     }
-    if (action === 'save-project') await upsert('guia_projects', projectPayload(data));
-    if (action === 'save-element') await upsert('guia_elements', elementPayload(data));
-    if (action === 'save-media') await saveMedia(data);
+    if (action === 'save-project') {
+      const saved = await upsert('guia_projects', projectPayload(data));
+      await loadData();
+      navigate(routePath(`/admin/proyectos/${saved.id}/`));
+      return;
+    }
+    if (action === 'save-element') {
+      const saved = await upsert('guia_elements', elementPayload(data));
+      await loadData();
+      navigate(routePath(`/admin/elementos/${saved.id}/`));
+      return;
+    }
+    if (action === 'save-media') {
+      await saveMedia(data);
+      await loadData();
+      navigate(routePath(`/admin/elementos/${data.element_id}/`));
+      return;
+    }
     await loadData();
     render();
   } catch (error) {
@@ -466,27 +618,23 @@ async function handleCommand(button) {
     const images = state.images.filter((item) => item.element_id === button.dataset.elementImages).sort(bySort);
     openLightbox(images, Number(button.dataset.index || 0));
   }
-  if (command === 'edit-project') {
-    const project = state.projects.find((item) => item.id === button.dataset.id);
-    document.querySelector('[data-action="save-project"]').outerHTML = projectForm(project);
-  }
-  if (command === 'edit-element') {
-    const element = state.elements.find((item) => item.id === button.dataset.id);
-    document.querySelector('[data-action="save-element"]').outerHTML = elementForm(element);
-  }
+  if (command === 'confirm-delete') showDeleteModal(button.dataset);
+  if (command === 'cancel-delete') closeDeleteModal();
+  if (command === 'delete-record') await deleteFromModal(button);
 }
 
 async function upsert(table, payload) {
   if (!supabase) throw new Error('Configura Supabase para guardar cambios.');
   const clean = Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== '' && value !== undefined));
-  const { error } = await supabase.from(table).upsert(clean).select();
+  const { data, error } = await supabase.from(table).upsert(clean).select().single();
   if (error) throw error;
+  return data;
 }
 
 async function saveMedia(data) {
-  const base = { element_id: data.element_id, title: data.title, sort_order: Number(data.sort_order || 0) };
-  if (data.kind === 'image') return upsert('guia_element_images', { ...base, image_url: data.url, thumbnail_url: data.url });
-  if (data.kind === 'audio') return upsert('guia_element_audios', { ...base, audio_url: data.url, language: data.meta || 'Sin idioma' });
+  const base = { id: data.id || undefined, element_id: data.element_id, title: data.title, sort_order: Number(data.sort_order || 0) };
+  if (data.kind === 'image') return upsert('guia_element_images', { ...base, image_url: data.url, thumbnail_url: data.thumbnail_url || data.url });
+  if (data.kind === 'audio') return upsert('guia_element_audios', { ...base, audio_url: data.url, language: data.meta || 'Sin idioma', duration: data.duration ? Number(data.duration) : null });
   return upsert('guia_element_links', { ...base, url: data.url, type: data.meta || 'Otro' });
 }
 
@@ -496,6 +644,80 @@ function projectPayload(data) {
 
 function elementPayload(data) {
   return { id: data.id || undefined, project_id: data.project_id, category_id: data.category_id || null, title: data.title, slug: data.slug, short_description: data.short_description, long_description: data.long_description, main_image_url: data.main_image_url, maps_url: data.maps_url, sort_order: Number(data.sort_order || 0), active: Boolean(data.active), featured: Boolean(data.featured) };
+}
+
+function mediaForElement(elementId) {
+  const images = state.images.filter((item) => item.element_id === elementId).map((item) => ({
+    ...item,
+    kind: 'image',
+    url: item.image_url,
+    meta: 'Imagen',
+    sort_order: item.sort_order || 0
+  }));
+  const audios = state.audios.filter((item) => item.element_id === elementId).map((item) => ({
+    ...item,
+    kind: 'audio',
+    url: item.audio_url,
+    meta: item.language,
+    sort_order: item.sort_order || 0
+  }));
+  const links = state.links.filter((item) => item.element_id === elementId).map((item) => ({
+    ...item,
+    kind: 'link',
+    url: item.url,
+    meta: item.type,
+    sort_order: item.sort_order || 0
+  }));
+  return [...images, ...audios, ...links].sort(bySort);
+}
+
+function mediaKindLabel(kind) {
+  return { image: 'Imagen', audio: 'Audio', link: 'Enlace' }[kind] || 'Contenido';
+}
+
+function mediaTable(kind) {
+  return {
+    image: 'guia_element_images',
+    audio: 'guia_element_audios',
+    link: 'guia_element_links'
+  }[kind];
+}
+
+function showDeleteModal({ table, id, label, redirect }) {
+  closeDeleteModal();
+  const modal = document.createElement('div');
+  modal.className = 'confirm-backdrop';
+  modal.dataset.deleteModal = 'true';
+  modal.innerHTML = `
+    <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+      <h2 id="delete-title">Confirmar borrado</h2>
+      <p>Vas a borrar <strong>${escapeHtml(label)}</strong>. Esta accion no se puede deshacer.</p>
+      <div class="actions">
+        <button class="button secondary" type="button" data-command="cancel-delete">Cancelar</button>
+        <button class="button danger" type="button" data-command="delete-record" data-table="${escapeAttr(table)}" data-id="${escapeAttr(id)}" data-redirect="${escapeAttr(redirect)}">Borrar</button>
+      </div>
+    </section>
+  `;
+  document.body.append(modal);
+  modal.querySelector('[data-command="cancel-delete"]').focus();
+}
+
+function closeDeleteModal() {
+  document.querySelector('[data-delete-modal]')?.remove();
+}
+
+async function deleteFromModal(button) {
+  try {
+    if (!supabase) throw new Error('Configura Supabase para borrar contenido.');
+    const { error } = await supabase.from(button.dataset.table).delete().eq('id', button.dataset.id);
+    if (error) throw error;
+    const redirect = button.dataset.redirect || routePath('/admin/');
+    closeDeleteModal();
+    await loadData();
+    navigate(redirect);
+  } catch (error) {
+    showToast(error.message || 'No se pudo borrar el registro.');
+  }
 }
 
 function openLightbox(images, index) {

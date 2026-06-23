@@ -149,6 +149,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .button.primary:hover { background: var(--primary-dark); }
 .button.secondary { background: #fff; color: var(--ink); border-color: var(--line); }
 .button.ghost { background: #eef6f3; color: var(--primary-dark); border-color: #b9d8d2; }
+.button.danger { background: #a83232; color: #fff; }
 
 .info-grid {
   display: grid;
@@ -270,6 +271,12 @@ button, a { -webkit-tap-highlight-color: transparent; }
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
+.admin-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: .5rem;
+}
 .admin-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -290,9 +297,24 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .stack-form .check { display: flex; align-items: center; gap: .5rem; }
 .stack-form .check input { width: auto; }
 .hint { color: var(--muted); font-size: .9rem; }
-.admin-lists { margin-top: 2rem; }
-.admin-list { display: grid; gap: .5rem; }
-.admin-list article {
+.admin-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+.admin-list-panel {
+  display: grid;
+  gap: .75rem;
+  margin-top: 1.5rem;
+}
+.list-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.list-title-row h2 { margin: 0; }
+.admin-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
@@ -302,6 +324,52 @@ button, a { -webkit-tap-highlight-color: transparent; }
   border: 1px solid var(--line);
   border-radius: 8px;
 }
+.admin-row div:first-child {
+  display: grid;
+  gap: .15rem;
+}
+.admin-row span { color: var(--muted); }
+.row-actions {
+  display: flex;
+  gap: .45rem;
+}
+.icon-action {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--primary-dark);
+  cursor: pointer;
+}
+.icon-action svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+.icon-action:hover { background: #eef6f3; }
+.icon-action.danger { color: #a83232; }
+.icon-action.danger:hover { background: #fff1f1; }
+
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(8, 16, 17, .56);
+}
+.confirm-modal {
+  width: min(460px, 100%);
+  padding: 1.25rem;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+.confirm-modal h2 { margin-top: 0; }
 
 .lightbox {
   position: fixed;
