@@ -53,7 +53,7 @@ document.addEventListener('submit', async (event) => {
 document.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-command]');
   if (!button) return;
-  await handleCommand(button);
+  await handleCommand(button, event);
 });
 
 init();
@@ -198,9 +198,9 @@ function infoBlock(title, text) {
 function renderProjects() {
   const cards = activeProjects().sort(bySort).map((project) => `
     <article class="project-card">
-      <img src="${escapeAttr(project.cover_thumbnail_url || project.cover_image_url)}" alt="Imagen de ${escapeAttr(project.name)}" loading="lazy">
+      <a class="card-media-link" href="${routePath(`/proyecto/${project.slug}/`)}" aria-label="Ver guia ${escapeAttr(project.name)}"><img src="${escapeAttr(project.cover_thumbnail_url || project.cover_image_url)}" alt="Imagen de ${escapeAttr(project.name)}" loading="lazy"></a>
       <div>
-        <h2>${escapeHtml(project.name)}</h2>
+        <h2><a href="${routePath(`/proyecto/${project.slug}/`)}">${escapeHtml(project.name)}</a></h2>
         <p>${escapeHtml(project.short_description || 'Guia local disponible.')}</p>
         <a class="button primary" href="${routePath(`/proyecto/${project.slug}/`)}">Ver guia</a>
       </div>
@@ -246,10 +246,10 @@ function elementCard(element) {
   const audio = state.audios.find((item) => item.element_id === element.id);
   return `
     <article class="place-card">
-      <img src="${escapeAttr(element.main_thumbnail_url || element.main_image_url)}" alt="Imagen de ${escapeAttr(element.title)}" loading="lazy">
+      <a class="card-media-link" href="${elementUrl(element)}" aria-label="Ver informacion de ${escapeAttr(element.title)}"><img src="${escapeAttr(element.main_thumbnail_url || element.main_image_url)}" alt="Imagen de ${escapeAttr(element.title)}" loading="lazy"></a>
       <div class="place-card-body">
         <p class="tag">${escapeHtml(categoryName(element.category_id))}</p>
-        <h2>${escapeHtml(element.title)}</h2>
+        <h2><a href="${elementUrl(element)}">${escapeHtml(element.title)}</a></h2>
         <p>${escapeHtml(element.short_description || '')}</p>
         <div class="actions compact">
           <a class="button primary" href="${elementUrl(element)}">Ver informacion</a>
@@ -376,14 +376,10 @@ function adminFrame(title, subtitle, body, actions = '') {
 }
 
 function renderAdminProjects() {
-  const rows = state.projects.sort(bySort).map((project) => adminRow({
+  const rows = state.projects.sort(bySort).map((project) => adminGoRow({
     title: project.name,
     meta: project.active ? 'Activo' : 'Inactivo',
-    editHref: routePath(`/admin/proyectos/${project.id}/`),
-    deleteTable: 'guia_projects',
-    deleteId: project.id,
-    deleteLabel: project.name,
-    deleteRedirect: routePath('/admin/')
+    href: routePath(`/admin/proyectos/${project.id}/`)
   })).join('');
 
   adminFrame(
@@ -404,22 +400,18 @@ function renderAdminProjectEditor(projectId) {
   const project = projectId ? state.projects.find((item) => item.id === projectId) : {};
   if (projectId && !project) return renderNotFound();
   const elements = projectId ? state.elements.filter((element) => element.project_id === projectId).sort(bySort) : [];
-  const rows = elements.map((element) => adminRow({
+  const rows = elements.map((element) => adminGoRow({
     title: element.title,
     meta: `${categoryName(element.category_id)} - ${element.active ? 'Activo' : 'Inactivo'}`,
-    editHref: routePath(`/admin/elementos/${element.id}/`),
-    deleteTable: 'guia_elements',
-    deleteId: element.id,
-    deleteLabel: element.title,
-    deleteRedirect: routePath(`/admin/proyectos/${projectId}/`)
+    href: routePath(`/admin/elementos/${element.id}/`)
   })).join('');
 
   adminFrame(
     projectId ? `Proyecto: ${project.name}` : 'Nuevo proyecto',
-    projectId ? 'Edita los datos del proyecto y sus elementos.' : 'Crea una nueva guia o localidad.',
+    projectId ? 'Datos del proyecto y sus elementos.' : 'Crea una nueva guia o localidad.',
     `
       <a class="back-link" href="${routePath('/admin/')}">Volver a proyectos</a>
-      ${projectForm(project)}
+      ${projectId ? projectReadOnly(project) : projectForm(project)}
       ${projectId ? `
         <section class="admin-list-panel">
           <div class="list-title-row">
@@ -454,7 +446,7 @@ function renderAdminElementEditor(elementId, projectId) {
     `Proyecto: ${project.name}`,
     `
       <a class="back-link" href="${routePath(`/admin/proyectos/${project.id}/`)}">Volver al proyecto</a>
-      ${elementForm(element)}
+      ${elementId ? elementReadOnly(element, project) : elementForm(element)}
       ${elementId ? `
         <section class="admin-list-panel">
           <div class="list-title-row">
@@ -484,6 +476,48 @@ function renderAdminMediaEditor(elementId, kind = 'image', mediaId = '') {
   );
 }
 
+function projectReadOnly(project) {
+  return `
+    <section class="panel readonly-panel">
+      ${project.cover_image_url ? `<img class="readonly-image" src="${escapeAttr(project.cover_image_url)}" alt="Imagen de ${escapeAttr(project.name)}">` : ''}
+      <dl class="readonly-grid">
+        <div><dt>Nombre</dt><dd>${escapeHtml(project.name)}</dd></div>
+        <div><dt>Slug</dt><dd>${escapeHtml(project.slug)}</dd></div>
+        <div><dt>Descripcion corta</dt><dd>${escapeHtml(project.short_description || 'Sin descripcion.')}</dd></div>
+        <div><dt>Orden</dt><dd>${escapeHtml(project.sort_order ?? 0)}</dd></div>
+        <div><dt>Estado</dt><dd>${project.active ? 'Activo' : 'Inactivo'}</dd></div>
+      </dl>
+      <div class="actions">
+        <button class="button primary" type="button" data-command="open-edit-modal" data-kind="project" data-id="${escapeAttr(project.id)}">Modificar</button>
+        <button class="button danger" type="button" data-command="confirm-delete" data-table="guia_projects" data-id="${escapeAttr(project.id)}" data-label="${escapeAttr(project.name)}" data-redirect="${routePath('/admin/')}">Borrar</button>
+      </div>
+    </section>
+  `;
+}
+
+function elementReadOnly(element, project) {
+  return `
+    <section class="panel readonly-panel">
+      ${element.main_image_url ? `<img class="readonly-image" src="${escapeAttr(element.main_image_url)}" alt="Imagen de ${escapeAttr(element.title)}">` : ''}
+      <dl class="readonly-grid">
+        <div><dt>Titulo</dt><dd>${escapeHtml(element.title)}</dd></div>
+        <div><dt>Slug</dt><dd>${escapeHtml(element.slug)}</dd></div>
+        <div><dt>Proyecto</dt><dd>${escapeHtml(project.name)}</dd></div>
+        <div><dt>Categoria</dt><dd>${escapeHtml(categoryName(element.category_id))}</dd></div>
+        <div><dt>Descripcion corta</dt><dd>${escapeHtml(element.short_description || 'Sin descripcion.')}</dd></div>
+        <div><dt>Descripcion larga</dt><dd>${escapeHtml(element.long_description || 'Sin descripcion ampliada.')}</dd></div>
+        <div><dt>Google Maps</dt><dd>${element.maps_url ? `<a href="${escapeAttr(element.maps_url)}" target="_blank" rel="noreferrer">Abrir mapa</a>` : 'Sin enlace'}</dd></div>
+        <div><dt>Orden</dt><dd>${escapeHtml(element.sort_order ?? 0)}</dd></div>
+        <div><dt>Estado</dt><dd>${element.active ? 'Activo' : 'Inactivo'}</dd></div>
+        <div><dt>Destacado</dt><dd>${element.featured ? 'Si' : 'No'}</dd></div>
+      </dl>
+      <div class="actions">
+        <button class="button primary" type="button" data-command="open-edit-modal" data-kind="element" data-id="${escapeAttr(element.id)}">Modificar</button>
+        <button class="button danger" type="button" data-command="confirm-delete" data-table="guia_elements" data-id="${escapeAttr(element.id)}" data-label="${escapeAttr(element.title)}" data-redirect="${routePath(`/admin/proyectos/${project.id}/`)}">Borrar</button>
+      </div>
+    </section>
+  `;
+}
 function projectForm(project = {}) {
   return `
     <form class="panel stack-form" data-action="save-project" enctype="multipart/form-data">
@@ -563,6 +597,14 @@ function option(value, label, selected) {
   return `<option value="${escapeAttr(value)}" ${selected === value ? 'selected' : ''}>${escapeHtml(label)}</option>`;
 }
 
+function adminGoRow({ title, meta, href }) {
+  return `
+    <article class="admin-row is-clickable" data-command="go" data-href="${escapeAttr(href)}">
+      <div><strong>${escapeHtml(title)}</strong><span>${escapeHtml(meta || '')}</span></div>
+      <a class="button secondary" href="${escapeAttr(href)}" aria-label="Ir a ${escapeAttr(title)}">Ir</a>
+    </article>
+  `;
+}
 function adminRow({ title, meta, editHref, deleteTable, deleteId, deleteLabel, deleteRedirect }) {
   return `
     <article class="admin-row">
@@ -616,8 +658,9 @@ async function handleAction(form) {
   }
 }
 
-async function handleCommand(button) {
+async function handleCommand(button, event) {
   const command = button.dataset.command;
+  if (command === 'go' && !event.target.closest('a, button')) navigate(button.dataset.href);
   if (command === 'toggle-more') document.querySelector('[data-more]')?.toggleAttribute('hidden');
   if (command === 'logout') {
     await signOut();
@@ -632,12 +675,24 @@ async function handleCommand(button) {
     const images = state.images.filter((item) => item.element_id === button.dataset.elementImages).sort(bySort);
     openLightbox(images, Number(button.dataset.index || 0));
   }
+  if (command === 'open-edit-modal') openEditModal(button.dataset);
+  if (command === 'close-edit') closeEditModal();
   if (command === 'confirm-delete') showDeleteModal(button.dataset);
   if (command === 'cancel-delete') closeDeleteModal();
   if (command === 'delete-record') await deleteFromModal(button);
   if (command === 'close-success') closeSuccessModal();
 }
 
+function openEditModal({ kind, id }) {
+  if (kind === 'project') {
+    const project = state.projects.find((item) => item.id === id);
+    if (project) showEditModal('Modificar proyecto', projectForm(project));
+  }
+  if (kind === 'element') {
+    const element = state.elements.find((item) => item.id === id);
+    if (element) showEditModal('Modificar elemento', elementForm(element));
+  }
+}
 async function upsert(table, payload) {
   if (!supabase) throw new Error('Configura Supabase para guardar cambios.');
   const clean = Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== '' && value !== undefined));
@@ -842,6 +897,27 @@ async function deleteFromModal(button) {
   }
 }
 
+function showEditModal(title, formHtml) {
+  closeEditModal();
+  const modal = document.createElement('div');
+  modal.className = 'confirm-backdrop';
+  modal.dataset.editModal = 'true';
+  modal.innerHTML = `
+    <section class="confirm-modal edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+      <div class="modal-title-row">
+        <h2 id="edit-title">${escapeHtml(title)}</h2>
+        <button class="icon-action" type="button" data-command="close-edit" aria-label="Cerrar">X</button>
+      </div>
+      ${formHtml}
+    </section>
+  `;
+  document.body.append(modal);
+  modal.querySelector('input, textarea, select, button')?.focus();
+}
+
+function closeEditModal() {
+  document.querySelector('[data-edit-modal]')?.remove();
+}
 function showSuccessModal(message) {
   closeSuccessModal();
   const modal = document.createElement('div');
