@@ -198,7 +198,7 @@ function infoBlock(title, text) {
 function renderProjects() {
   const cards = activeProjects().sort(bySort).map((project) => `
     <article class="project-card">
-      <img src="${escapeAttr(project.cover_image_url)}" alt="Imagen de ${escapeAttr(project.name)}" loading="lazy">
+      <img src="${escapeAttr(project.cover_thumbnail_url || project.cover_image_url)}" alt="Imagen de ${escapeAttr(project.name)}" loading="lazy">
       <div>
         <h2>${escapeHtml(project.name)}</h2>
         <p>${escapeHtml(project.short_description || 'Guia local disponible.')}</p>
@@ -246,7 +246,7 @@ function elementCard(element) {
   const audio = state.audios.find((item) => item.element_id === element.id);
   return `
     <article class="place-card">
-      <img src="${escapeAttr(element.main_image_url)}" alt="Imagen de ${escapeAttr(element.title)}" loading="lazy">
+      <img src="${escapeAttr(element.main_thumbnail_url || element.main_image_url)}" alt="Imagen de ${escapeAttr(element.title)}" loading="lazy">
       <div class="place-card-body">
         <p class="tag">${escapeHtml(categoryName(element.category_id))}</p>
         <h2>${escapeHtml(element.title)}</h2>
@@ -486,12 +486,16 @@ function renderAdminMediaEditor(elementId, kind = 'image', mediaId = '') {
 
 function projectForm(project = {}) {
   return `
-    <form class="panel stack-form" data-action="save-project">
+    <form class="panel stack-form" data-action="save-project" enctype="multipart/form-data">
       <input type="hidden" name="id" value="${escapeAttr(project.id || '')}">
+      <input type="hidden" name="cover_image_url" value="${escapeAttr(project.cover_image_url || '')}">
+      <input type="hidden" name="cover_thumbnail_url" value="${escapeAttr(project.cover_thumbnail_url || '')}">
       <label>Nombre<input required name="name" value="${escapeAttr(project.name || '')}"></label>
       <label>Slug<input required name="slug" value="${escapeAttr(project.slug || '')}" placeholder="centro-historico"></label>
       <label>Descripcion corta<textarea name="short_description">${escapeHtml(project.short_description || '')}</textarea></label>
-      <label>Imagen de portada<input name="cover_image_url" type="url" value="${escapeAttr(project.cover_image_url || '')}"></label>
+      <label>Imagen de portada<input name="cover_image_file" type="file" accept="image/png,image/jpeg,image/webp"></label>
+      <p class="hint">Subida maxima por archivo: ${window.GUIA_CONFIG.maxImageMb} MB. La imagen se optimiza hasta un maximo aproximado de ${window.GUIA_CONFIG.maxOptimizedImageKb} KB y se guarda una miniatura.</p>
+      ${project.cover_image_url ? `<p class="hint">Imagen actual cargada desde Supabase. Sube otra imagen para sustituirla.</p>` : ''}
       <label>Orden<input name="sort_order" type="number" value="${escapeAttr(project.sort_order || 0)}"></label>
       <label class="check"><input name="active" type="checkbox" ${project.active ?? true ? 'checked' : ''}> Activo</label>
       <button class="button primary" type="submit">Guardar proyecto</button>
@@ -503,15 +507,19 @@ function elementForm(element = {}) {
   const projectOptions = state.projects.map((project) => option(project.id, project.name, element.project_id)).join('');
   const categoryOptions = state.categories.map((category) => option(category.id, category.name, element.category_id)).join('');
   return `
-    <form class="panel stack-form" data-action="save-element">
+    <form class="panel stack-form" data-action="save-element" enctype="multipart/form-data">
       <input type="hidden" name="id" value="${escapeAttr(element.id || '')}">
+      <input type="hidden" name="main_image_url" value="${escapeAttr(element.main_image_url || '')}">
+      <input type="hidden" name="main_thumbnail_url" value="${escapeAttr(element.main_thumbnail_url || '')}">
       <label>Proyecto<select required name="project_id">${projectOptions}</select></label>
       <label>Categoria<select name="category_id">${categoryOptions}</select></label>
       <label>Titulo<input required name="title" value="${escapeAttr(element.title || '')}"></label>
       <label>Slug<input required name="slug" value="${escapeAttr(element.slug || '')}"></label>
       <label>Descripcion corta<textarea name="short_description">${escapeHtml(element.short_description || '')}</textarea></label>
       <label>Descripcion larga<textarea name="long_description">${escapeHtml(element.long_description || '')}</textarea></label>
-      <label>Imagen principal<input name="main_image_url" type="url" value="${escapeAttr(element.main_image_url || '')}"></label>
+      <label>Imagen principal<input name="main_image_file" type="file" accept="image/png,image/jpeg,image/webp"></label>
+      <p class="hint">Subida maxima por archivo: ${window.GUIA_CONFIG.maxImageMb} MB. La imagen se optimiza hasta un maximo aproximado de ${window.GUIA_CONFIG.maxOptimizedImageKb} KB y se guarda una miniatura.</p>
+      ${element.main_image_url ? `<p class="hint">Imagen actual cargada desde Supabase. Sube otra imagen para sustituirla.</p>` : ''}
       <label>Google Maps<input name="maps_url" type="url" value="${escapeAttr(element.maps_url || '')}"></label>
       <label>Orden<input name="sort_order" type="number" value="${escapeAttr(element.sort_order || 0)}"></label>
       <label class="check"><input name="active" type="checkbox" ${element.active ?? true ? 'checked' : ''}> Activo</label>
@@ -533,17 +541,19 @@ function mediaForm(elementId, item = {}) {
         </select>
       </label>`;
   return `
-    <form class="panel stack-form" data-action="save-media">
+    <form class="panel stack-form" data-action="save-media" enctype="multipart/form-data">
       <input type="hidden" name="id" value="${escapeAttr(item.id || '')}">
       <input type="hidden" name="element_id" value="${escapeAttr(elementId)}">
+      <input type="hidden" name="url" value="${escapeAttr(item.url || '')}">
+      <input type="hidden" name="thumbnail_url" value="${escapeAttr(item.thumbnail_url || '')}">
       ${kindControl}
       <label>Titulo<input required name="title" value="${escapeAttr(item.title || '')}"></label>
-      <label>URL<input required name="url" type="url" value="${escapeAttr(item.url || '')}"></label>
-      <label>Miniatura de imagen<input name="thumbnail_url" type="url" value="${escapeAttr(item.thumbnail_url || '')}"></label>
+      <label>Imagen<input name="media_image_file" type="file" accept="image/png,image/jpeg,image/webp"></label>
+      <label>URL para audio o enlace<input name="external_url" type="url" value="${kind === 'image' ? '' : escapeAttr(item.url || '')}"></label>
       <label>Idioma o tipo<input name="meta" value="${escapeAttr(item.meta || '')}" placeholder="Espanol, Web oficial, Cita previa..."></label>
       <label>Duracion en segundos<input name="duration" type="number" value="${escapeAttr(item.duration || '')}"></label>
       <label>Orden<input name="sort_order" type="number" value="${escapeAttr(item.sort_order || 0)}"></label>
-      <p class="hint">Recomendado: imagenes WebP de hasta ${window.GUIA_CONFIG.maxImageMb} MB y audios MP3/M4A de hasta ${window.GUIA_CONFIG.maxAudioMb} MB. La compresion automatica queda preparada para una fase posterior.</p>
+      <p class="hint">Subida maxima por archivo: ${window.GUIA_CONFIG.maxImageMb} MB. Si el tipo es Imagen, se optimiza automaticamente hasta un maximo aproximado de ${window.GUIA_CONFIG.maxOptimizedImageKb} KB y se guarda una miniatura en Supabase.</p>
       <button class="button primary" type="submit">Guardar contenido</button>
     </form>
   `;
@@ -578,12 +588,14 @@ async function handleAction(form) {
       state.session = await signIn(data.email, data.password);
     }
     if (action === 'save-project') {
+      await attachUploadedImage(data, 'cover_image_file', 'projects', 'cover_image_url', 'cover_thumbnail_url');
       const saved = await upsert('guia_projects', projectPayload(data));
       await loadData();
       navigate(routePath(`/admin/proyectos/${saved.id}/`));
       return;
     }
     if (action === 'save-element') {
+      await attachUploadedImage(data, 'main_image_file', 'elements', 'main_image_url', 'main_thumbnail_url');
       const saved = await upsert('guia_elements', elementPayload(data));
       await loadData();
       navigate(routePath(`/admin/elementos/${saved.id}/`));
@@ -633,17 +645,124 @@ async function upsert(table, payload) {
 
 async function saveMedia(data) {
   const base = { id: data.id || undefined, element_id: data.element_id, title: data.title, sort_order: Number(data.sort_order || 0) };
-  if (data.kind === 'image') return upsert('guia_element_images', { ...base, image_url: data.url, thumbnail_url: data.thumbnail_url || data.url });
+  if (data.kind === 'image') {
+    await attachUploadedImage(data, 'media_image_file', `elements/${data.element_id}/gallery`, 'url', 'thumbnail_url');
+    if (!data.url) throw new Error('Selecciona una imagen para guardar el contenido multimedia.');
+    return upsert('guia_element_images', { ...base, image_url: data.url, thumbnail_url: data.thumbnail_url || data.url });
+  }
+  data.url = data.external_url || data.url;
+  if (!data.url) throw new Error('Indica una URL para guardar audio o enlace.');
   if (data.kind === 'audio') return upsert('guia_element_audios', { ...base, audio_url: data.url, language: data.meta || 'Sin idioma', duration: data.duration ? Number(data.duration) : null });
   return upsert('guia_element_links', { ...base, url: data.url, type: data.meta || 'Otro' });
 }
 
 function projectPayload(data) {
-  return { id: data.id || undefined, name: data.name, slug: data.slug, short_description: data.short_description, cover_image_url: data.cover_image_url, sort_order: Number(data.sort_order || 0), active: Boolean(data.active) };
+  return { id: data.id || undefined, name: data.name, slug: data.slug, short_description: data.short_description, cover_image_url: data.cover_image_url, cover_thumbnail_url: data.cover_thumbnail_url, sort_order: Number(data.sort_order || 0), active: Boolean(data.active) };
 }
 
 function elementPayload(data) {
-  return { id: data.id || undefined, project_id: data.project_id, category_id: data.category_id || null, title: data.title, slug: data.slug, short_description: data.short_description, long_description: data.long_description, main_image_url: data.main_image_url, maps_url: data.maps_url, sort_order: Number(data.sort_order || 0), active: Boolean(data.active), featured: Boolean(data.featured) };
+  return { id: data.id || undefined, project_id: data.project_id, category_id: data.category_id || null, title: data.title, slug: data.slug, short_description: data.short_description, long_description: data.long_description, main_image_url: data.main_image_url, main_thumbnail_url: data.main_thumbnail_url, maps_url: data.maps_url, sort_order: Number(data.sort_order || 0), active: Boolean(data.active), featured: Boolean(data.featured) };
+}
+
+async function attachUploadedImage(data, fileField, folder, urlField, thumbnailField) {
+  const file = data[fileField];
+  if (!(file instanceof File) || file.size === 0) return;
+  const upload = await uploadOptimizedImage(file, folder);
+  data[urlField] = upload.imageUrl;
+  data[thumbnailField] = upload.thumbnailUrl;
+}
+
+async function uploadOptimizedImage(file, folder) {
+  if (!supabase) throw new Error('Configura Supabase para subir imagenes.');
+  const cfg = window.GUIA_CONFIG;
+  const maxBytes = cfg.maxImageMb * 1024 * 1024;
+  if (file.size > maxBytes) throw new Error(`La imagen supera el limite de ${cfg.maxImageMb} MB por archivo.`);
+  if (!file.type.startsWith('image/')) throw new Error('Selecciona un archivo de imagen valido.');
+
+  const imageBlob = await optimizeImage(file, 1800, cfg.maxOptimizedImageKb * 1024);
+  const thumbBlob = await optimizeImage(file, 520, 120 * 1024);
+  const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const basePath = `${folder}/${stamp}`;
+  const imagePath = `${basePath}.webp`;
+  const thumbPath = `${basePath}-thumb.webp`;
+
+  await uploadBlob(imagePath, imageBlob);
+  await uploadBlob(thumbPath, thumbBlob);
+
+  return {
+    imageUrl: publicStorageUrl(imagePath),
+    thumbnailUrl: publicStorageUrl(thumbPath)
+  };
+}
+
+async function uploadBlob(path, blob) {
+  const bucket = window.GUIA_CONFIG.storageBucket;
+  const { error } = await supabase.storage.from(bucket).upload(path, blob, {
+    cacheControl: '31536000',
+    contentType: 'image/webp',
+    upsert: true
+  });
+  if (error) throw error;
+}
+
+function publicStorageUrl(path) {
+  const { data } = supabase.storage.from(window.GUIA_CONFIG.storageBucket).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+async function optimizeImage(file, maxSide, maxBytes) {
+  const bitmap = await imageBitmapFromFile(file);
+  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const ctx = canvas.getContext('2d', { alpha: false });
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  if (bitmap.close) bitmap.close();
+
+  let quality = 0.86;
+  let blob = await canvasToBlob(canvas, quality);
+  while (blob.size > maxBytes && quality > 0.42) {
+    quality -= 0.08;
+    blob = await canvasToBlob(canvas, quality);
+  }
+
+  if (blob.size > maxBytes) {
+    return shrinkCanvasUntil(canvas, maxBytes);
+  }
+  return blob;
+}
+
+async function shrinkCanvasUntil(canvas, maxBytes) {
+  let current = canvas;
+  let blob = await canvasToBlob(current, 0.42);
+  while (blob.size > maxBytes && current.width > 480 && current.height > 480) {
+    const smaller = document.createElement('canvas');
+    smaller.width = Math.round(current.width * 0.82);
+    smaller.height = Math.round(current.height * 0.82);
+    smaller.getContext('2d', { alpha: false }).drawImage(current, 0, 0, smaller.width, smaller.height);
+    current = smaller;
+    blob = await canvasToBlob(current, 0.42);
+  }
+  return blob;
+}
+
+function canvasToBlob(canvas, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('No se pudo optimizar la imagen.')), 'image/webp', quality);
+  });
+}
+
+async function imageBitmapFromFile(file) {
+  if ('createImageBitmap' in window) return createImageBitmap(file, { imageOrientation: 'from-image' });
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+    image.src = URL.createObjectURL(file);
+  });
 }
 
 function mediaForElement(elementId) {

@@ -12,6 +12,7 @@ export const demoProjects = [
     slug: 'centro-historico',
     short_description: 'Una guia sencilla para orientarse por los lugares principales del centro.',
     cover_image_url: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1200&q=80',
+    cover_thumbnail_url: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=520&q=70',
     active: true,
     sort_order: 1
   },
@@ -21,6 +22,7 @@ export const demoProjects = [
     slug: 'servicios-cercanos',
     short_description: 'Recursos utiles para tramites, salud, transporte y atencion social.',
     cover_image_url: 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80',
+    cover_thumbnail_url: 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=520&q=70',
     active: true,
     sort_order: 2
   }
@@ -36,6 +38,7 @@ export const demoElements = [
     short_description: 'Punto de encuentro central con comercios, bancos y transporte cercano.',
     long_description: 'La Plaza Mayor es un lugar facil para orientarse. Desde aqui puedes encontrar paradas de autobus, oficinas municipales, cafeterias y calles principales. Es un buen punto de referencia si acabas de llegar.',
     main_image_url: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
+    main_thumbnail_url: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=520&q=70',
     maps_url: 'https://www.google.com/maps',
     active: true,
     featured: true,
@@ -50,6 +53,7 @@ export const demoElements = [
     short_description: 'Edificio municipal para informacion, padron y tramites locales.',
     long_description: 'En el Ayuntamiento puedes pedir informacion general, consultar horarios de atencion y recibir orientacion sobre tramites municipales. Revisa los enlaces utiles antes de ir.',
     main_image_url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
+    main_thumbnail_url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=520&q=70',
     maps_url: 'https://www.google.com/maps',
     active: true,
     featured: false,
@@ -64,6 +68,7 @@ export const demoElements = [
     short_description: 'Atencion sanitaria, citas y consultas basicas.',
     long_description: 'El centro de salud ofrece atencion medica primaria. Para urgencias graves llama al telefono de emergencias de tu zona. Lleva documentacion personal y tarjeta sanitaria si la tienes.',
     main_image_url: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80',
+    main_thumbnail_url: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=520&q=70',
     maps_url: 'https://www.google.com/maps',
     active: true,
     featured: true,

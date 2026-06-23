@@ -19,6 +19,7 @@ create table if not exists public.guia_projects (
   slug text not null unique,
   short_description text,
   cover_image_url text,
+  cover_thumbnail_url text,
   active boolean not null default true,
   sort_order integer not null default 0,
   created_at timestamptz not null default now(),
@@ -44,6 +45,7 @@ create table if not exists public.guia_elements (
   short_description text,
   long_description text,
   main_image_url text,
+  main_thumbnail_url text,
   maps_url text,
   active boolean not null default true,
   featured boolean not null default false,
@@ -107,6 +109,12 @@ alter table public.guia_elements enable row level security;
 alter table public.guia_element_images enable row level security;
 alter table public.guia_element_audios enable row level security;
 alter table public.guia_element_links enable row level security;
+
+alter table public.guia_projects
+add column if not exists cover_thumbnail_url text;
+
+alter table public.guia_elements
+add column if not exists main_thumbnail_url text;
 
 drop policy if exists "Public can read active guia projects" on public.guia_projects;
 create policy "Public can read active guia projects"
@@ -189,6 +197,40 @@ on public.guia_element_links for all
 using (auth.role() = 'authenticated')
 with check (auth.role() = 'authenticated');
 
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'guia-media',
+  'guia-media',
+  true,
+  5242880,
+  array['image/webp', 'image/jpeg', 'image/png', 'audio/mpeg', 'audio/mp4']
+)
+on conflict (id) do update
+set public = true,
+    file_size_limit = 5242880,
+    allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Public can read guia media" on storage.objects;
+create policy "Public can read guia media"
+on storage.objects for select
+using (bucket_id = 'guia-media');
+
+drop policy if exists "Authenticated admins can upload guia media" on storage.objects;
+create policy "Authenticated admins can upload guia media"
+on storage.objects for insert
+with check (bucket_id = 'guia-media' and auth.role() = 'authenticated');
+
+drop policy if exists "Authenticated admins can update guia media" on storage.objects;
+create policy "Authenticated admins can update guia media"
+on storage.objects for update
+using (bucket_id = 'guia-media' and auth.role() = 'authenticated')
+with check (bucket_id = 'guia-media' and auth.role() = 'authenticated');
+
+drop policy if exists "Authenticated admins can delete guia media" on storage.objects;
+create policy "Authenticated admins can delete guia media"
+on storage.objects for delete
+using (bucket_id = 'guia-media' and auth.role() = 'authenticated');
+
 insert into public.guia_categories (name, slug, icon, sort_order)
 values
   ('Monumentos', 'monumentos', 'landmark', 1),
@@ -206,7 +248,6 @@ set name = excluded.name,
     sort_order = excluded.sort_order,
     active = true;
 
--- Almacenamiento recomendado:
--- Crea un bucket publico llamado guia-media para imagenes y audios.
--- Limites sugeridos: imagenes WebP/JPEG/PNG hasta 4 MB; audios MP3/M4A hasta 12 MB.
--- La app actual acepta URLs. La subida y compresion automatica puede anadirse despues con Storage + Edge Function.
+-- Almacenamiento:
+-- Este script crea el bucket publico guia-media.
+-- Limite de subida por archivo: 5 MB. La app optimiza imagenes a WebP hasta unos 500 KB y guarda miniaturas.

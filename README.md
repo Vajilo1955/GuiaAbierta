@@ -13,7 +13,10 @@ Aplicacion web estatica para crear guias audiovisuales accesibles de localidades
 1. Crea un proyecto Supabase nuevo e independiente.
 2. Ejecuta `supabase/sql/001_schema.sql` en el SQL Editor.
 3. Ejecuta `supabase/sql/002_seed.sql` si quieres datos de prueba.
-4. Crea los usuarios administradores en Supabase Auth.
+4. Si ya habias ejecutado el esquema antes de la subida de imagenes, ejecuta tambien `supabase/sql/003_storage_images.sql`.
+5. Crea los usuarios administradores en Supabase Auth.
+
+Las imagenes se suben al bucket publico `guia-media`. El limite de subida por archivo es 5 MB; la app optimiza cada imagen hasta un maximo aproximado de 500 KB y guarda una miniatura.
 
 La app usa solo clave publica anon/publishable en frontend. No incluyas `service_role` en ningun archivo publico.
 
