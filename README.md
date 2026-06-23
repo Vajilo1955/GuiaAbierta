@@ -29,4 +29,4 @@ Despues abre `http://localhost:3000/guia/`.
 
 ## Despliegue
 
-Publica el repositorio en GitHub Pages desde la rama principal. La aplicacion queda disponible en `/guia/`.
+Publica el repositorio en GitHub Pages desde la rama principal. En GitHub Pages de proyecto la aplicacion queda disponible en `/GuiaAbierta/guia/`; en dominio propio puede quedar en `/guia/`.

@@ -7,13 +7,14 @@
   </head>
   <body>
     <script>
-      const path = window.location.pathname;
-      if (path.startsWith('/guia/')) {
-        window.location.replace('/guia/?route=' + encodeURIComponent(path));
-      } else {
-        window.location.replace('/guia/');
-      }
+      const segments = window.location.pathname.split('/').filter(Boolean);
+      const repo = segments[0] || '';
+      const guiaIndex = segments.indexOf('guia');
+      const base = guiaIndex >= 0
+        ? '/' + segments.slice(0, guiaIndex + 1).join('/') + '/'
+        : repo ? '/' + repo + '/guia/' : '/guia/';
+      window.location.replace(base + '?route=' + encodeURIComponent(window.location.pathname));
     </script>
-    <a href="/guia/">Abrir GuiaAbierta</a>
+    <a href="./guia/">Abrir GuiaAbierta</a>
   </body>
 </html>

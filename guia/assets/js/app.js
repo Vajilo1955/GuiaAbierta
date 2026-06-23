@@ -5,6 +5,10 @@ const app = document.querySelector('#app');
 const menuButton = document.querySelector('[data-menu-toggle]');
 const nav = document.querySelector('[data-main-nav]');
 const lightbox = document.querySelector('[data-lightbox]');
+const BASE_PATH = getBasePath();
+document.querySelectorAll('[data-route]').forEach((link) => {
+  link.setAttribute('href', routePath(link.dataset.route || '/'));
+});
 
 const state = {
   projects: [],
@@ -26,10 +30,17 @@ menuButton.addEventListener('click', () => {
 
 window.addEventListener('popstate', render);
 document.addEventListener('click', (event) => {
-  const link = event.target.closest('a[href^="/guia/"]');
+  const link = event.target.closest('a[href]');
   if (!link || link.target === '_blank' || event.metaKey || event.ctrlKey) return;
+  if (link.dataset.route) {
+    event.preventDefault();
+    navigate(routePath(link.dataset.route));
+    return;
+  }
+  const url = new URL(link.href, window.location.origin);
+  if (url.origin !== window.location.origin || !url.pathname.startsWith(BASE_PATH)) return;
   event.preventDefault();
-  navigate(link.getAttribute('href'));
+  navigate(url.pathname + url.search);
 });
 
 document.addEventListener('submit', async (event) => {
@@ -62,6 +73,18 @@ function navigate(path) {
   menuButton.setAttribute('aria-expanded', 'false');
   render();
   app.focus();
+}
+
+function getBasePath() {
+  const segments = window.location.pathname.split('/').filter(Boolean);
+  const guiaIndex = segments.indexOf('guia');
+  if (guiaIndex >= 0) return `/${segments.slice(0, guiaIndex + 1).join('/')}/`;
+  return '/guia/';
+}
+
+function routePath(route = '/') {
+  const cleanRoute = route.replace(/^\/+/, '');
+  return `${BASE_PATH}${cleanRoute}`;
 }
 
 async function loadData() {
@@ -105,15 +128,22 @@ async function loadData() {
 }
 
 function render() {
-  const path = normalizePath(window.location.pathname);
+  const path = normalizePath(currentRoute());
   const parts = path.split('/').filter(Boolean);
 
-  if (path === '/guia' || path === '/guia/') return renderLanding();
-  if (path === '/guia/proyectos/') return renderProjects();
-  if (parts[1] === 'proyecto' && parts.length === 3) return renderProject(parts[2]);
-  if (parts[1] === 'proyecto' && parts.length === 4) return renderElement(parts[2], parts[3]);
-  if (parts[1] === 'admin') return renderAdmin();
+  if (path === '/' || path === '') return renderLanding();
+  if (path === '/proyectos/') return renderProjects();
+  if (parts[0] === 'proyecto' && parts.length === 2) return renderProject(parts[1]);
+  if (parts[0] === 'proyecto' && parts.length === 3) return renderElement(parts[1], parts[2]);
+  if (parts[0] === 'admin') return renderAdmin();
   renderNotFound();
+}
+
+function currentRoute() {
+  const path = window.location.pathname.startsWith(BASE_PATH)
+    ? window.location.pathname.slice(BASE_PATH.length - 1)
+    : window.location.pathname;
+  return path || '/';
 }
 
 function normalizePath(path) {
@@ -147,8 +177,8 @@ function renderLanding() {
         <h1>GuiaAbierta</h1>
         <p>Descubre los lugares importantes de tu localidad con imagenes, audios, mapas y enlaces utiles. Una guia pensada para ayudarte a orientarte, conocer tu entorno y acceder mejor a los servicios cercanos.</p>
         <div class="actions">
-          <a class="button primary" href="/guia/proyectos/">Ver guias disponibles</a>
-          <a class="button secondary" href="/guia/admin/">Acceso administradores</a>
+          <a class="button primary" href="${routePath('/proyectos/')}">Ver guias disponibles</a>
+          <a class="button secondary" href="${routePath('/admin/')}">Acceso administradores</a>
         </div>
       </div>
     </section>
@@ -172,7 +202,7 @@ function renderProjects() {
       <div>
         <h2>${escapeHtml(project.name)}</h2>
         <p>${escapeHtml(project.short_description || 'Guia local disponible.')}</p>
-        <a class="button primary" href="/guia/proyecto/${project.slug}/">Ver guia</a>
+        <a class="button primary" href="${routePath(`/proyecto/${project.slug}/`)}">Ver guia</a>
       </div>
     </article>
   `).join('');
@@ -195,14 +225,14 @@ function renderProject(slug) {
   const filters = ['todas', ...state.categories.filter((c) => c.active).map((c) => c.id)].map((id) => {
     const label = id === 'todas' ? 'Todas' : categoryName(id);
     const active = selectedCategory === id ? ' aria-current="true"' : '';
-    return `<a class="chip" href="/guia/proyecto/${project.slug}/?categoria=${id}"${active}>${escapeHtml(label)}</a>`;
+    return `<a class="chip" href="${routePath(`/proyecto/${project.slug}/`)}?categoria=${id}"${active}>${escapeHtml(label)}</a>`;
   }).join('');
 
   app.innerHTML = `
     <section class="project-hero">
       <img src="${escapeAttr(project.cover_image_url)}" alt="Imagen de ${escapeAttr(project.name)}">
       <div>
-        <a class="back-link" href="/guia/proyectos/">Volver a guias</a>
+        <a class="back-link" href="${routePath('/proyectos/')}">Volver a guias</a>
         <h1>${escapeHtml(project.name)}</h1>
         <p>${escapeHtml(project.short_description || '')}</p>
       </div>
@@ -233,7 +263,7 @@ function elementCard(element) {
 
 function elementUrl(element) {
   const project = state.projects.find((item) => item.id === element.project_id);
-  return `/guia/proyecto/${project?.slug || ''}/${element.slug}/`;
+  return routePath(`/proyecto/${project?.slug || ''}/${element.slug}/`);
 }
 
 function renderElement(projectSlug, elementSlug) {
@@ -246,7 +276,7 @@ function renderElement(projectSlug, elementSlug) {
 
   app.innerHTML = `
     <article class="detail">
-      <a class="back-link" href="/guia/proyecto/${project.slug}/">Volver a ${escapeHtml(project.name)}</a>
+      <a class="back-link" href="${routePath(`/proyecto/${project.slug}/`)}">Volver a ${escapeHtml(project.name)}</a>
       <header class="detail-head">
         <div>
           <p class="tag">${escapeHtml(categoryName(element.category_id))}</p>
@@ -506,7 +536,7 @@ function emptyState(text) {
 }
 
 function renderNotFound() {
-  app.innerHTML = `<section class="page-head"><h1>Pagina no encontrada</h1><p>La ruta solicitada no existe.</p><a class="button primary" href="/guia/">Volver al inicio</a></section>`;
+  app.innerHTML = `<section class="page-head"><h1>Pagina no encontrada</h1><p>La ruta solicitada no existe.</p><a class="button primary" href="${routePath('/')}">Volver al inicio</a></section>`;
 }
 
 function escapeHtml(value = '') {
