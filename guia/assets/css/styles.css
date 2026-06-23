@@ -175,7 +175,18 @@ button, a { -webkit-tap-highlight-color: transparent; }
   padding-bottom: 4rem;
 }
 .project-card, .place-card { overflow: hidden; }
-.project-card img, .place-card img { width: 100%; height: 220px; object-fit: cover; }
+.project-card .card-media-link, .place-card .card-media-link {
+  display: grid;
+  place-items: center;
+  height: 180px;
+  padding: .5rem;
+  background: #eef3ef;
+}
+.project-card img, .place-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 .project-card > div, .place-card-body { padding: 1rem; }
 .project-card h2, .place-card h2 { margin: .2rem 0 .5rem; }
 
