@@ -581,13 +581,14 @@ function mediaForm(elementId, item = {}) {
       <input type="hidden" name="url" value="${escapeAttr(item.url || '')}">
       <input type="hidden" name="thumbnail_url" value="${escapeAttr(item.thumbnail_url || '')}">
       ${kindControl}
-      <label>Titulo<input required name="title" value="${escapeAttr(item.title || '')}"></label>
+      <label>Titulo<input name="title" value="${escapeAttr(item.title || '')}"></label>
       <label>Imagen<input name="media_image_file" type="file" accept="image/png,image/jpeg,image/webp"></label>
-      <label>URL para audio o enlace<input name="external_url" type="url" value="${kind === 'image' ? '' : escapeAttr(item.url || '')}"></label>
+      <label>Audio<input name="media_audio_file" type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,.mp3,.m4a"></label>
+      <label>URL para enlace<input name="external_url" type="url" value="${kind === 'link' ? escapeAttr(item.url || '') : ''}"></label>
       <label>Idioma o tipo<input name="meta" value="${escapeAttr(item.meta || '')}" placeholder="Espanol, Web oficial, Cita previa..."></label>
       <label>Duracion en segundos<input name="duration" type="number" value="${escapeAttr(item.duration || '')}"></label>
       <label>Orden<input name="sort_order" type="number" value="${escapeAttr(item.sort_order || 0)}"></label>
-      <p class="hint">Subida maxima por archivo: ${window.GUIA_CONFIG.maxImageMb} MB. Si el tipo es Imagen, se optimiza automaticamente hasta un maximo aproximado de ${window.GUIA_CONFIG.maxOptimizedImageKb} KB y se guarda una miniatura en Supabase.</p>
+      <p class="hint">Subida maxima por archivo: ${window.GUIA_CONFIG.maxImageMb} MB. Las imagenes se optimizan hasta un maximo aproximado de ${window.GUIA_CONFIG.maxOptimizedImageKb} KB y los audios se suben a Supabase.</p>
       <button class="button primary" type="submit">Guardar contenido</button>
     </form>
   `;
@@ -700,15 +701,19 @@ async function upsert(table, payload) {
 }
 
 async function saveMedia(data) {
-  const base = { id: data.id || undefined, element_id: data.element_id, title: data.title, sort_order: Number(data.sort_order || 0) };
+  const base = { id: data.id || undefined, element_id: data.element_id, title: data.title || null, sort_order: Number(data.sort_order || 0) };
   if (data.kind === 'image') {
     await attachUploadedImage(data, 'media_image_file', `elements/${data.element_id}/gallery`, 'url', 'thumbnail_url');
     if (!data.url) throw new Error('Selecciona una imagen para guardar el contenido multimedia.');
     return upsert('guia_element_images', { ...base, image_url: data.url, thumbnail_url: data.thumbnail_url || data.url });
   }
+  if (data.kind === 'audio') {
+    await attachUploadedAudio(data, 'media_audio_file', `elements/${data.element_id}/audio`, 'url');
+    if (!data.url) throw new Error('Selecciona un archivo de audio para guardar el contenido multimedia.');
+    return upsert('guia_element_audios', { ...base, audio_url: data.url, language: data.meta || 'Sin idioma', duration: data.duration ? Number(data.duration) : null });
+  }
   data.url = data.external_url || data.url;
-  if (!data.url) throw new Error('Indica una URL para guardar audio o enlace.');
-  if (data.kind === 'audio') return upsert('guia_element_audios', { ...base, audio_url: data.url, language: data.meta || 'Sin idioma', duration: data.duration ? Number(data.duration) : null });
+  if (!data.url) throw new Error('Indica una URL para guardar el enlace.');
   return upsert('guia_element_links', { ...base, url: data.url, type: data.meta || 'Otro' });
 }
 
@@ -728,6 +733,35 @@ async function attachUploadedImage(data, fileField, folder, urlField, thumbnailF
   data[thumbnailField] = upload.thumbnailUrl;
 }
 
+async function attachUploadedAudio(data, fileField, folder, urlField) {
+  const file = data[fileField];
+  if (!(file instanceof File) || file.size === 0) return;
+  const upload = await uploadAudio(file, folder);
+  data[urlField] = upload.audioUrl;
+}
+
+async function uploadAudio(file, folder) {
+  if (!supabase) throw new Error('Configura Supabase para subir audios.');
+  const cfg = window.GUIA_CONFIG;
+  const maxBytes = cfg.maxAudioMb * 1024 * 1024;
+  if (file.size > maxBytes) throw new Error(`El audio supera el limite de ${cfg.maxAudioMb} MB por archivo.`);
+  const validTypes = ['audio/mpeg', 'audio/mp4', 'audio/x-m4a'];
+  const extension = audioExtension(file);
+  if (!validTypes.includes(file.type) && !['mp3', 'm4a'].includes(extension)) throw new Error('Selecciona un audio MP3 o M4A valido.');
+  const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const audioPath = `${folder}/${stamp}.${extension || 'mp3'}`;
+  await uploadBlob(audioPath, file, file.type || audioContentType(extension));
+  return { audioUrl: publicStorageUrl(audioPath) };
+}
+
+function audioExtension(file) {
+  const name = file.name || '';
+  return name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+}
+
+function audioContentType(extension) {
+  return extension === 'm4a' ? 'audio/mp4' : 'audio/mpeg';
+}
 async function uploadOptimizedImage(file, folder) {
   if (!supabase) throw new Error('Configura Supabase para subir imagenes.');
   const cfg = window.GUIA_CONFIG;
@@ -751,11 +785,11 @@ async function uploadOptimizedImage(file, folder) {
   };
 }
 
-async function uploadBlob(path, blob) {
+async function uploadBlob(path, blob, contentType = 'image/webp') {
   const bucket = window.GUIA_CONFIG.storageBucket;
   const { error } = await supabase.storage.from(bucket).upload(path, blob, {
     cacheControl: '31536000',
-    contentType: 'image/webp',
+    contentType,
     upsert: true
   });
   if (error) throw error;

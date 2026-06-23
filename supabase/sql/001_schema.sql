@@ -250,4 +250,4 @@ set name = excluded.name,
 
 -- Almacenamiento:
 -- Este script crea el bucket publico guia-media.
--- Limite de subida por archivo: 5 MB. La app optimiza imagenes a WebP hasta unos 500 KB y guarda miniaturas.
+-- Limite de subida por archivo: 5 MB. La app optimiza imagenes a WebP hasta unos 500 KB, guarda miniaturas y sube audios MP3/M4A.

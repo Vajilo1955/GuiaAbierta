@@ -1,5 +1,5 @@
 -- Ejecutar si ya habias aplicado 001_schema.sql antes de incorporar la subida de imagenes.
--- Anade miniaturas de portada/elemento y configura el bucket guia-media.
+-- Anade miniaturas de portada/elemento y configura el bucket guia-media para imagenes y audios.
 
 alter table public.guia_projects
 add column if not exists cover_thumbnail_url text;
