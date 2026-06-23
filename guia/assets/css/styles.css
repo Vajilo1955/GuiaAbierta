@@ -141,7 +141,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 .phone-mockup {
   justify-self: center;
-  width: min(100%, 380px);
+  width: min(100%, 315px);
   perspective: 1200px;
 }
 .phone-frame {
@@ -200,7 +200,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   position: relative;
   display: grid;
   gap: .85rem;
-  min-height: 590px;
+  min-height: 490px;
   padding: 3.45rem 1rem 1rem;
   overflow: hidden;
   border-radius: 38px;
@@ -696,7 +696,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 @media (max-width: 920px) {
   .info-grid, .cards-grid, .admin-grid { grid-template-columns: repeat(2, 1fr); }
   .hero { grid-template-columns: 1fr; min-height: auto; }
-  .phone-mockup { width: min(100%, 340px); }
+  .phone-mockup { width: min(100%, 290px); }
   .phone-frame { transform: rotate(-4deg); }
   .project-hero, .detail-head { grid-template-columns: 1fr; }
 }
@@ -719,7 +719,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   }
   .main-nav.is-open { display: flex; }
   .hero { padding-top: 2rem; }
-  .phone-screen { min-height: 500px; padding-top: 3.2rem; }
+  .phone-screen { min-height: 430px; padding-top: 3rem; }
   .phone-frame { transform: rotate(-3deg); }
   .hero h1, .page-head h1, .detail h1, .project-hero h1 { font-size: 2.6rem; }
   .info-grid, .cards-grid, .admin-grid, .audio-list, .link-grid, .gallery.count-2, .gallery.count-3 { grid-template-columns: 1fr; }

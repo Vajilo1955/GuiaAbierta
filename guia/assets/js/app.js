@@ -209,12 +209,12 @@ function normalizePath(path) {
 }
 
 function activeProjects() {
-  return state.projects.filter((project) => project.active || state.session);
+  return state.projects.filter((project) => project.active);
 }
 
 function activeElements(projectId) {
   return state.elements
-    .filter((element) => element.project_id === projectId && (element.active || state.session))
+    .filter((element) => element.project_id === projectId && element.active)
     .sort(bySort);
 }
 
@@ -299,7 +299,7 @@ function renderProjects() {
 }
 
 function renderProject(slug) {
-  const project = state.projects.find((item) => item.slug === slug);
+  const project = state.projects.find((item) => item.slug === slug && item.active);
   if (!project) return renderNotFound();
   const selectedCategory = new URLSearchParams(location.search).get('categoria') || 'todas';
   const elements = activeElements(project.id).filter((element) => selectedCategory === 'todas' || element.category_id === selectedCategory);
@@ -348,8 +348,8 @@ function elementUrl(element) {
 }
 
 function renderElement(projectSlug, elementSlug) {
-  const project = state.projects.find((item) => item.slug === projectSlug);
-  const element = state.elements.find((item) => item.slug === elementSlug && item.project_id === project?.id);
+  const project = state.projects.find((item) => item.slug === projectSlug && item.active);
+  const element = state.elements.find((item) => item.slug === elementSlug && item.project_id === project?.id && item.active);
   if (!project || !element) return renderNotFound();
   const images = state.images.filter((item) => item.element_id === element.id).sort(bySort);
   const audios = state.audios.filter((item) => item.element_id === element.id).sort(bySort);
