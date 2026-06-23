@@ -592,6 +592,7 @@ async function handleAction(form) {
       const saved = await upsert('guia_projects', projectPayload(data));
       await loadData();
       navigate(routePath(`/admin/proyectos/${saved.id}/`));
+      showSuccessModal('Proyecto guardado correctamente.');
       return;
     }
     if (action === 'save-element') {
@@ -599,6 +600,7 @@ async function handleAction(form) {
       const saved = await upsert('guia_elements', elementPayload(data));
       await loadData();
       navigate(routePath(`/admin/elementos/${saved.id}/`));
+      showSuccessModal('Elemento guardado correctamente.');
       return;
     }
     if (action === 'save-media') {
@@ -633,6 +635,7 @@ async function handleCommand(button) {
   if (command === 'confirm-delete') showDeleteModal(button.dataset);
   if (command === 'cancel-delete') closeDeleteModal();
   if (command === 'delete-record') await deleteFromModal(button);
+  if (command === 'close-success') closeSuccessModal();
 }
 
 async function upsert(table, payload) {
@@ -839,6 +842,27 @@ async function deleteFromModal(button) {
   }
 }
 
+function showSuccessModal(message) {
+  closeSuccessModal();
+  const modal = document.createElement('div');
+  modal.className = 'confirm-backdrop';
+  modal.dataset.successModal = 'true';
+  modal.innerHTML = `
+    <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="success-title">
+      <h2 id="success-title">Cambios guardados</h2>
+      <p>${escapeHtml(message)}</p>
+      <div class="actions">
+        <button class="button primary" type="button" data-command="close-success">Aceptar</button>
+      </div>
+    </section>
+  `;
+  document.body.append(modal);
+  modal.querySelector('[data-command="close-success"]').focus();
+}
+
+function closeSuccessModal() {
+  document.querySelector('[data-success-modal]')?.remove();
+}
 function openLightbox(images, index) {
   state.lightboxImages = images;
   state.lightboxIndex = index;
