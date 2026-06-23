@@ -633,16 +633,14 @@ async function handleAction(form) {
       await attachUploadedImage(data, 'cover_image_file', 'projects', 'cover_image_url', 'cover_thumbnail_url');
       const saved = await upsert('guia_projects', projectPayload(data));
       await loadData();
-      navigate(routePath(`/admin/proyectos/${saved.id}/`));
-      showSuccessModal('Proyecto guardado correctamente.');
+      showSuccessModal('Proyecto guardado correctamente.', routePath(`/admin/proyectos/${saved.id}/`));
       return;
     }
     if (action === 'save-element') {
       await attachUploadedImage(data, 'main_image_file', 'elements', 'main_image_url', 'main_thumbnail_url');
       const saved = await upsert('guia_elements', elementPayload(data));
       await loadData();
-      navigate(routePath(`/admin/elementos/${saved.id}/`));
-      showSuccessModal('Elemento guardado correctamente.');
+      showSuccessModal('Elemento guardado correctamente.', routePath(`/admin/elementos/${saved.id}/`));
       return;
     }
     if (action === 'save-media') {
@@ -680,7 +678,7 @@ async function handleCommand(button, event) {
   if (command === 'confirm-delete') showDeleteModal(button.dataset);
   if (command === 'cancel-delete') closeDeleteModal();
   if (command === 'delete-record') await deleteFromModal(button);
-  if (command === 'close-success') closeSuccessModal();
+  if (command === 'close-success') closeSuccessModal(button.dataset.redirect);
 }
 
 function openEditModal({ kind, id }) {
@@ -918,7 +916,7 @@ function showEditModal(title, formHtml) {
 function closeEditModal() {
   document.querySelector('[data-edit-modal]')?.remove();
 }
-function showSuccessModal(message) {
+function showSuccessModal(message, redirect = '') {
   closeSuccessModal();
   const modal = document.createElement('div');
   modal.className = 'confirm-backdrop';
@@ -928,7 +926,7 @@ function showSuccessModal(message) {
       <h2 id="success-title">Cambios guardados</h2>
       <p>${escapeHtml(message)}</p>
       <div class="actions">
-        <button class="button primary" type="button" data-command="close-success">Aceptar</button>
+        <button class="button primary" type="button" data-command="close-success" data-redirect="${escapeAttr(redirect)}">Aceptar</button>
       </div>
     </section>
   `;
@@ -936,8 +934,12 @@ function showSuccessModal(message) {
   modal.querySelector('[data-command="close-success"]').focus();
 }
 
-function closeSuccessModal() {
+function closeSuccessModal(redirect = '') {
   document.querySelector('[data-success-modal]')?.remove();
+  if (redirect) {
+    closeEditModal();
+    navigate(redirect);
+  }
 }
 function openLightbox(images, index) {
   state.lightboxImages = images;
