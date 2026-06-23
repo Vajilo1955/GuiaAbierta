@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Redirigiendo a GuiaAbierta</title>
+  </head>
+  <body>
+    <script>
+      const path = window.location.pathname;
+      if (path.startsWith('/guia/')) {
+        window.location.replace('/guia/?route=' + encodeURIComponent(path));
+      } else {
+        window.location.replace('/guia/');
+      }
+    </script>
+    <a href="/guia/">Abrir GuiaAbierta</a>
+  </body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GuiaAbierta</title>
+    <meta name="description" content="Guia audiovisual accesible con imagenes, audios, mapas y enlaces utiles.">
+    <link rel="stylesheet" href="./assets/css/styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#app">Saltar al contenido</a>
+    <header class="topbar" data-topbar>
+      <a class="brand" href="/guia/" aria-label="Inicio GuiaAbierta">
+        <span class="brand-mark" aria-hidden="true">GA</span>
+        <span>GuiaAbierta</span>
+      </a>
+      <button class="menu-button" type="button" data-menu-toggle aria-expanded="false" aria-controls="main-nav">Menu</button>
+      <nav id="main-nav" class="main-nav" data-main-nav>
+        <a href="/guia/proyectos/">Guias</a>
+        <a href="/guia/admin/">Administradores</a>
+      </nav>
+    </header>
+
+    <main id="app" tabindex="-1"></main>
+
+    <footer class="site-footer">
+      <p>GuiaAbierta facilita orientacion local con informacion clara, visual y accesible.</p>
+    </footer>
+
+    <div class="lightbox" data-lightbox hidden>
+      <button class="icon-button lightbox-close" type="button" data-lightbox-close aria-label="Cerrar visor">Cerrar</button>
+      <button class="icon-button lightbox-prev" type="button" data-lightbox-prev aria-label="Imagen anterior">Anterior</button>
+      <figure>
+        <img data-lightbox-image alt="">
+        <figcaption data-lightbox-caption></figcaption>
+      </figure>
+      <button class="icon-button lightbox-next" type="button" data-lightbox-next aria-label="Imagen siguiente">Siguiente</button>
+    </div>
+
+    <script src="./assets/js/config.js"></script>
+    <script type="module" src="./assets/js/app.js"></script>
+  </body>
+</html>
