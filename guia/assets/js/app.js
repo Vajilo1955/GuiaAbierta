@@ -6,6 +6,28 @@ const menuButton = document.querySelector('[data-menu-toggle]');
 const nav = document.querySelector('[data-main-nav]');
 const lightbox = document.querySelector('[data-lightbox]');
 const BASE_PATH = getBasePath();
+const REVEAL_SELECTOR = [
+  '.hero-content',
+  '.info-block',
+  '.page-head',
+  '.project-card',
+  '.place-card',
+  '.project-hero > *',
+  '.filter-row',
+  '.detail > .back-link',
+  '.detail-head > *',
+  '.section',
+  '.gallery-item',
+  '.audio-card',
+  '.link-card',
+  '.admin-head',
+  '.admin-toolbar',
+  '.admin-list-panel',
+  '.admin-row',
+  '.panel',
+  '.empty'
+].join(',');
+let revealObserver;
 document.querySelectorAll('[data-route]').forEach((link) => {
   link.setAttribute('href', routePath(link.dataset.route || '/'));
 });
@@ -130,15 +152,50 @@ async function loadData() {
 function render() {
   const path = normalizePath(currentRoute());
   const parts = path.split('/').filter(Boolean);
+  let result;
 
-  if (path === '/' || path === '') return renderLanding();
-  if (path === '/proyectos/') return renderProjects();
-  if (parts[0] === 'proyecto' && parts.length === 2) return renderProject(parts[1]);
-  if (parts[0] === 'proyecto' && parts.length === 3) return renderElement(parts[1], parts[2]);
-  if (parts[0] === 'admin') return renderAdmin(parts);
-  renderNotFound();
+  if (path === '/' || path === '') result = renderLanding();
+  else if (path === '/proyectos/') result = renderProjects();
+  else if (parts[0] === 'proyecto' && parts.length === 2) result = renderProject(parts[1]);
+  else if (parts[0] === 'proyecto' && parts.length === 3) result = renderElement(parts[1], parts[2]);
+  else if (parts[0] === 'admin') result = renderAdmin(parts);
+  else result = renderNotFound();
+
+  Promise.resolve(result).then(queueScrollReveal);
+  return result;
 }
 
+function queueScrollReveal() {
+  requestAnimationFrame(initScrollReveal);
+}
+
+function initScrollReveal() {
+  const items = [...app.querySelectorAll(REVEAL_SELECTOR)]
+    .filter((item) => !item.classList.contains('reveal-on-scroll') && !item.hidden && item.offsetParent !== null);
+
+  if (!items.length) return;
+
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+    items.forEach((item) => item.classList.add('reveal-on-scroll', 'is-visible'));
+    return;
+  }
+
+  if (!revealObserver) {
+    revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-visible');
+        revealObserver.unobserve(entry.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
+  }
+
+  items.forEach((item, index) => {
+    item.classList.add('reveal-on-scroll');
+    item.style.setProperty('--reveal-delay', `${Math.min(index, 8) * 45}ms`);
+    revealObserver.observe(item);
+  });
+}
 function currentRoute() {
   const path = window.location.pathname.startsWith(BASE_PATH)
     ? window.location.pathname.slice(BASE_PATH.length - 1)
@@ -198,7 +255,7 @@ function infoBlock(title, text) {
 function renderProjects() {
   const cards = activeProjects().sort(bySort).map((project) => `
     <article class="project-card">
-      <a class="card-media-link" href="${routePath(`/proyecto/${project.slug}/`)}" aria-label="Ver guia ${escapeAttr(project.name)}"><img src="${escapeAttr(project.cover_thumbnail_url || project.cover_image_url)}" alt="Imagen de ${escapeAttr(project.name)}" loading="lazy"></a>
+      <a class="card-media-link" href="${routePath(`/proyecto/${project.slug}/`)}" aria-label="Ver guia ${escapeAttr(project.name)}"><img src="${escapeAttr(project.cover_image_url)}" alt="Imagen de ${escapeAttr(project.name)}" loading="lazy"></a>
       <div>
         <h2><a href="${routePath(`/proyecto/${project.slug}/`)}">${escapeHtml(project.name)}</a></h2>
         <p>${escapeHtml(project.short_description || 'Guia local disponible.')}</p>
@@ -246,7 +303,7 @@ function elementCard(element) {
   const audio = state.audios.find((item) => item.element_id === element.id);
   return `
     <article class="place-card">
-      <a class="card-media-link" href="${elementUrl(element)}" aria-label="Ver informacion de ${escapeAttr(element.title)}"><img src="${escapeAttr(element.main_thumbnail_url || element.main_image_url)}" alt="Imagen de ${escapeAttr(element.title)}" loading="lazy"></a>
+      <a class="card-media-link" href="${elementUrl(element)}" aria-label="Ver informacion de ${escapeAttr(element.title)}"><img src="${escapeAttr(element.main_image_url)}" alt="Imagen de ${escapeAttr(element.title)}" loading="lazy"></a>
       <div class="place-card-body">
         <p class="tag">${escapeHtml(categoryName(element.category_id))}</p>
         <h2><a href="${elementUrl(element)}">${escapeHtml(element.title)}</a></h2>
@@ -303,7 +360,7 @@ function renderGallery(images, title) {
   return `<div class="gallery count-${visible.length}">${visible.map((image, index) => {
     const remaining = images.length - 3;
     const overlay = index === 2 && remaining > 0 ? `<span class="gallery-more">+${remaining}</span>` : '';
-    return `<button type="button" class="gallery-item" data-command="open-lightbox" data-element-images="${escapeAttr(image.element_id)}" data-index="${index}" aria-label="Abrir imagen ${index + 1} de ${escapeAttr(title)}"><img src="${escapeAttr(image.thumbnail_url || image.image_url)}" alt="${escapeAttr(image.title || title)}">${overlay}</button>`;
+    return `<button type="button" class="gallery-item" data-command="open-lightbox" data-element-images="${escapeAttr(image.element_id)}" data-index="${index}" aria-label="Abrir imagen ${index + 1} de ${escapeAttr(title)}"><img src="${escapeAttr(image.image_url)}" alt="${escapeAttr(image.title || title)}">${overlay}</button>`;
   }).join('')}</div>`;
 }
 
@@ -660,7 +717,10 @@ async function handleAction(form) {
 async function handleCommand(button, event) {
   const command = button.dataset.command;
   if (command === 'go' && !event.target.closest('a, button')) navigate(button.dataset.href);
-  if (command === 'toggle-more') document.querySelector('[data-more]')?.toggleAttribute('hidden');
+  if (command === 'toggle-more') {
+    document.querySelector('[data-more]')?.toggleAttribute('hidden');
+    queueScrollReveal();
+  }
   if (command === 'logout') {
     await signOut();
     state.session = null;
