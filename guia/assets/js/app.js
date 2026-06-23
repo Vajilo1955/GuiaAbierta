@@ -240,7 +240,9 @@ function renderLanding() {
       </div>
       <div class="phone-mockup" aria-label="Vista previa movil de GuiaAbierta">
         <div class="phone-frame">
-          <div class="phone-speaker" aria-hidden="true"></div>
+          <span class="phone-side-button volume" aria-hidden="true"></span>
+          <span class="phone-side-button power" aria-hidden="true"></span>
+          <div class="phone-island" aria-hidden="true"></div>
           <div class="phone-screen">
             <div class="phone-appbar">
               <span class="phone-logo">GA</span>

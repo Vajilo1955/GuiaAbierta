@@ -141,31 +141,71 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 .phone-mockup {
   justify-self: center;
-  width: min(100%, 360px);
+  width: min(100%, 380px);
+  perspective: 1200px;
 }
 .phone-frame {
   position: relative;
-  padding: 1rem;
-  border: 1px solid #223235;
-  border-radius: 34px;
-  background: #13272b;
-  box-shadow: 0 24px 60px rgba(16, 32, 34, .22);
+  padding: .72rem;
+  border: 1px solid #2c3438;
+  border-radius: 48px;
+  background:
+    linear-gradient(145deg, #f7f8f7 0%, #9aa1a4 11%, #1c2428 18%, #0b1114 78%, #777f82 100%);
+  box-shadow:
+    0 32px 70px rgba(16, 32, 34, .28),
+    inset 0 0 0 2px rgba(255, 255, 255, .16),
+    inset 0 0 0 7px #111719;
+  transform: rotate(-7deg) rotateY(-10deg) rotateX(3deg);
+  transform-origin: center;
 }
-.phone-speaker {
-  width: 72px;
-  height: 6px;
-  margin: 0 auto .75rem;
+.phone-frame::before {
+  content: "";
+  position: absolute;
+  inset: 1.05rem;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: 36px;
+  background: linear-gradient(115deg, rgba(255,255,255,.28), rgba(255,255,255,.04) 32%, transparent 33% 100%);
+  mix-blend-mode: screen;
+}
+.phone-side-button {
+  position: absolute;
+  width: 4px;
   border-radius: 999px;
-  background: #5b7074;
+  background: linear-gradient(#6f787b, #1a2225);
+}
+.phone-side-button.volume {
+  left: -4px;
+  top: 126px;
+  height: 76px;
+}
+.phone-side-button.power {
+  right: -4px;
+  top: 172px;
+  height: 92px;
+}
+.phone-island {
+  position: absolute;
+  top: 1.7rem;
+  left: 50%;
+  z-index: 3;
+  width: 96px;
+  height: 28px;
+  border-radius: 999px;
+  background: #050607;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04), 0 1px 2px rgba(255,255,255,.12);
+  transform: translateX(-50%);
 }
 .phone-screen {
+  position: relative;
   display: grid;
   gap: .85rem;
-  min-height: 560px;
-  padding: 1rem;
+  min-height: 590px;
+  padding: 3.45rem 1rem 1rem;
   overflow: hidden;
-  border-radius: 24px;
+  border-radius: 38px;
   background: var(--paper);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.24);
 }
 .phone-appbar {
   display: flex;
@@ -614,6 +654,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .info-grid, .cards-grid, .admin-grid { grid-template-columns: repeat(2, 1fr); }
   .hero { grid-template-columns: 1fr; min-height: auto; }
   .phone-mockup { width: min(100%, 340px); }
+  .phone-frame { transform: rotate(-4deg); }
   .project-hero, .detail-head { grid-template-columns: 1fr; }
 }
 
@@ -635,7 +676,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
   }
   .main-nav.is-open { display: flex; }
   .hero { padding-top: 2rem; }
-  .phone-screen { min-height: 500px; }
+  .phone-screen { min-height: 500px; padding-top: 3.2rem; }
+  .phone-frame { transform: rotate(-3deg); }
   .hero h1, .page-head h1, .detail h1, .project-hero h1 { font-size: 2.6rem; }
   .info-grid, .cards-grid, .admin-grid, .audio-list, .link-grid, .gallery.count-2, .gallery.count-3 { grid-template-columns: 1fr; }
   .actions .button { width: 100%; }
