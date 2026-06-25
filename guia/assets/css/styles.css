@@ -605,19 +605,21 @@ button, a { -webkit-tap-highlight-color: transparent; }
   border-radius: 8px;
 }
 .media-preview {
-  display: grid;
-  place-items: center;
+  position: relative;
+  display: block;
   aspect-ratio: 4 / 3;
   overflow: hidden;
   background: #eef3ef;
   border-radius: 7px;
 }
 .media-preview img {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
-  max-width: 100%;
-  max-height: 100%;
+  max-width: none;
+  max-height: none;
   object-fit: contain;
   object-position: center;
 }
@@ -665,8 +667,14 @@ button, a { -webkit-tap-highlight-color: transparent; }
 }
 .project-readonly-layout .readonly-image,
 .element-readonly-layout .readonly-image {
-  width: 100%;
-  max-height: none;
+  display: block;
+  width: min(520px, 100%);
+  aspect-ratio: 4 / 3;
+  max-height: 360px;
+  object-fit: contain;
+  object-position: center;
+  background: #eef3ef;
+  border-radius: 8px;
 }
 .row-actions {
   display: flex;
@@ -729,6 +737,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   aspect-ratio: 4 / 3;
   max-height: 360px;
   object-fit: contain;
+  object-position: center;
   background: #eef3ef;
   border-radius: 8px;
 }
