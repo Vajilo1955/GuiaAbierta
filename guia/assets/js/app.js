@@ -1,4 +1,4 @@
-import { supabase, getSession, initSupabase, signIn, signOut } from './supabase-client.js';
+import { supabase, completeAuthFromUrl, getSession, initSupabase, signIn, signOut, updatePassword } from './supabase-client.js';
 import { demoAudios, demoCategories, demoElements, demoImages, demoLinks, demoProjects } from './demo-data.js';
 
 const app = document.querySelector('#app');
@@ -92,6 +92,15 @@ async function init() {
   const redirected = new URLSearchParams(window.location.search).get('route');
   if (redirected) history.replaceState({}, '', redirected);
   await initSupabase();
+  const authRedirect = await completeAuthFromUrl().catch((error) => {
+    showToast(error.message || 'No se pudo completar el acceso.');
+    return { session: null, type: '' };
+  });
+  if (authRedirect.session) {
+    const isRecoveryRoute = normalizePath(currentRoute()).startsWith('/admin/restaurar/');
+    const target = authRedirect.type === 'recovery' || isRecoveryRoute ? routePath('/admin/restaurar/') : routePath('/admin/');
+    history.replaceState({}, '', target);
+  }
   state.session = await getSession();
   await loadData();
   render();
@@ -490,6 +499,7 @@ function renderLinks(links) {
 
 async function renderAdmin(parts = []) {
   state.session = await getSession();
+  if (parts[1] === 'restaurar') return renderAdminPasswordReset();
   if (!state.session) {
     app.innerHTML = `
       <section class="admin-shell narrow">
@@ -538,6 +548,19 @@ function adminFrame(title, subtitle, body, actions = '') {
   `;
 }
 
+function renderAdminPasswordReset() {
+  adminFrame(
+    'Restaurar contrasena',
+    'Introduce una nueva contrasena para tu usuario administrador.',
+    `
+      <form class="panel stack-form" data-action="update-password">
+        <label>Nueva contrasena<input required type="password" name="password" autocomplete="new-password" minlength="8"></label>
+        <label>Repetir contrasena<input required type="password" name="password_confirm" autocomplete="new-password" minlength="8"></label>
+        <button class="button primary" type="submit">Guardar contrasena</button>
+      </form>
+    `
+  );
+}
 function renderAdminProjects() {
   const rows = state.projects.sort(bySort).map((project) => adminGoRow({
     title: project.name,
@@ -880,6 +903,13 @@ async function handleAction(form) {
   try {
     if (action === 'login') {
       state.session = await signIn(data.email, data.password);
+    }
+    if (action === 'update-password') {
+      if (data.password !== data.password_confirm) throw new Error('Las contrasenas no coinciden.');
+      await updatePassword(data.password);
+      state.session = await getSession();
+      showSuccessModal('Contrasena actualizada correctamente.', routePath('/admin/'));
+      return;
     }
     if (action === 'save-project') {
       await attachUploadedImage(data, 'cover_image_file', 'projects', 'cover_image_url', 'cover_thumbnail_url');
