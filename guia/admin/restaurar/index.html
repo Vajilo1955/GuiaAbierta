@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Restaurar contrasena - GuiaAbierta</title>
+  </head>
+  <body>
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      params.set('route', '/admin/restaurar/');
+      window.location.replace(`../../?${params.toString()}${window.location.hash}`);
+    </script>
+  </body>
+</html>

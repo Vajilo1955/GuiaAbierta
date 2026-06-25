@@ -90,22 +90,23 @@ init();
 
 async function init() {
   const redirected = new URLSearchParams(window.location.search).get('route');
-  if (redirected) history.replaceState({}, '', redirected);
   await initSupabase();
   const authRedirect = await completeAuthFromUrl().catch((error) => {
     showToast(error.message || 'No se pudo completar el acceso.');
     return { session: null, type: '' };
   });
   if (authRedirect.session) {
-    const isRecoveryRoute = normalizePath(currentRoute()).startsWith('/admin/restaurar/');
+    const route = redirected ? redirectedRoutePath(redirected) : currentRoute();
+    const isRecoveryRoute = normalizePath(route).startsWith('/admin/restaurar/');
     const target = authRedirect.type === 'recovery' || isRecoveryRoute ? routePath('/admin/restaurar/') : routePath('/admin/');
     history.replaceState({}, '', target);
+  } else if (redirected) {
+    history.replaceState({}, '', redirectedRoutePath(redirected));
   }
   state.session = await getSession();
   await loadData();
   render();
 }
-
 function navigate(path) {
   history.pushState({}, '', path);
   nav.classList.remove('is-open');
@@ -124,6 +125,15 @@ function getBasePath() {
 function routePath(route = '/') {
   const cleanRoute = route.replace(/^\/+/, '');
   return `${BASE_PATH}${cleanRoute}`;
+}
+
+function redirectedRoutePath(route) {
+  if (!route) return routePath('/');
+  const url = new URL(route, window.location.origin);
+  if (url.origin === window.location.origin && url.pathname.startsWith(BASE_PATH)) {
+    return url.pathname + url.search;
+  }
+  return routePath(url.pathname) + url.search;
 }
 
 async function loadData() {
