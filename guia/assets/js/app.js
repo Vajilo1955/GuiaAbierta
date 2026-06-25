@@ -77,15 +77,7 @@ document.addEventListener('input', (event) => {
   const input = event.target.closest('[data-element-filter]');
   if (!input) return;
   clearTimeout(elementFilterTimer);
-  elementFilterTimer = setTimeout(() => {
-    const params = new URLSearchParams(location.search);
-    const value = input.value.trim();
-    if (value) params.set('buscar', value);
-    else params.delete('buscar');
-    params.delete('pagina');
-    const query = params.toString();
-    navigate(`${location.pathname}${query ? `?${query}` : ''}`);
-  }, 180);
+  elementFilterTimer = setTimeout(() => applyElementFilter(input), 120);
 });
 
 document.addEventListener('click', async (event) => {
@@ -211,6 +203,59 @@ function initScrollReveal() {
     item.style.setProperty('--reveal-delay', `${Math.min(index, 8) * 45}ms`);
     revealObserver.observe(item);
   });
+}
+function updateSearchParam(value) {
+  const params = new URLSearchParams(location.search);
+  if (value) params.set('buscar', value);
+  else params.delete('buscar');
+  params.delete('pagina');
+  const query = params.toString();
+  history.replaceState({}, '', `${location.pathname}${query ? `?${query}` : ''}`);
+}
+
+function matchesElementFilter(element, query) {
+  if (!query) return true;
+  return [element.title, element.slug, element.short_description, categoryName(element.category_id)]
+    .some((value) => String(value || '').toLowerCase().includes(query));
+}
+
+function applyElementFilter(input) {
+  const value = input.value.trim();
+  const query = value.toLowerCase();
+  updateSearchParam(value);
+
+  if (input.dataset.filterMode === 'public-project') {
+    const target = document.querySelector(input.dataset.filterTarget);
+    if (!target) return;
+    const categoryId = input.dataset.categoryId || 'todas';
+    const elements = activeElements(input.dataset.projectId)
+      .filter((element) => categoryId === 'todas' || element.category_id === categoryId)
+      .filter((element) => matchesElementFilter(element, query));
+    target.innerHTML = elements.map(elementCard).join('') || emptyState(query ? 'No hay elementos que coincidan con la busqueda.' : 'No hay elementos para este filtro.');
+    queueScrollReveal();
+    return;
+  }
+
+  if (input.dataset.filterMode === 'admin-project') {
+    const target = document.querySelector(input.dataset.filterTarget);
+    const summary = document.querySelector(input.dataset.summaryTarget || '');
+    const pagination = document.querySelector(input.dataset.paginationTarget || '');
+    if (!target) return;
+    const allElements = state.elements.filter((element) => element.project_id === input.dataset.projectId).sort(bySort);
+    const pageSize = 10;
+    const currentPage = Number(input.dataset.currentPage || 1);
+    const filtered = allElements.filter((element) => matchesElementFilter(element, query));
+    const visible = query ? filtered : filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+    target.innerHTML = visible.map((element) => adminGoRow({
+      title: element.title,
+      meta: `${categoryName(element.category_id)} - ${element.active ? 'Activo' : 'Inactivo'}`,
+      href: routePath(`/admin/elementos/${element.id}/`),
+      compact: true
+    })).join('') || emptyState(query ? 'No hay elementos que coincidan con la busqueda.' : 'Este proyecto todavia no tiene elementos.');
+    if (summary) summary.textContent = filtered.length ? `${query ? 1 : ((currentPage - 1) * pageSize) + 1}-${query ? filtered.length : Math.min(currentPage * pageSize, filtered.length)} de ${filtered.length}` : (query ? 'Sin coincidencias' : 'Sin elementos');
+    if (pagination) pagination.hidden = Boolean(query);
+    queueScrollReveal();
+  }
 }
 function currentRoute() {
   const path = window.location.pathname.startsWith(BASE_PATH)
@@ -346,10 +391,10 @@ function renderProject(slug) {
     <section class="filter-row" aria-label="Filtrar por categoria">${filters}</section>
     <section class="public-search-row">
       <div class="admin-search-control public-search-control">
-        <input name="element_query" type="search" placeholder="Buscar elemento" value="${escapeAttr(searchParams.get('buscar') || '')}" data-element-filter aria-label="Buscar elemento">
+        <input name="element_query" type="search" placeholder="Buscar elemento" value="${escapeAttr(searchParams.get('buscar') || '')}" data-element-filter data-filter-mode="public-project" data-project-id="${escapeAttr(project.id)}" data-category-id="${escapeAttr(selectedCategory)}" data-filter-target="#project-elements-cards" aria-label="Buscar elemento">
       </div>
     </section>
-    <section class="cards-grid">${elements.map(elementCard).join('') || emptyState(elementFilter ? 'No hay elementos que coincidan con la busqueda.' : 'No hay elementos para este filtro.')}</section>
+    <section id="project-elements-cards" class="cards-grid">${elements.map(elementCard).join('') || emptyState(elementFilter ? 'No hay elementos que coincidan con la busqueda.' : 'No hay elementos para este filtro.')}</section>
   `;
 }
 function elementCard(element) {
@@ -545,17 +590,17 @@ function renderAdminProjectEditor(projectId) {
           <div class="list-title-row">
             <div>
               <h2>Elementos del proyecto</h2>
-              <p class="list-summary">${filteredElements.length ? `${pageStart + 1}-${pageStart + elements.length} de ${filteredElements.length}` : (elementFilter ? 'Sin coincidencias' : 'Sin elementos')}</p>
+              <p class="list-summary" data-elements-summary>${filteredElements.length ? `${pageStart + 1}-${pageStart + elements.length} de ${filteredElements.length}` : (elementFilter ? 'Sin coincidencias' : 'Sin elementos')}</p>
             </div>
             <div class="admin-inline-tools">
               <div class="admin-search-control">
-                <input name="element_query" type="search" placeholder="Buscar elemento" value="${escapeAttr(searchParams.get('buscar') || '')}" data-element-filter aria-label="Buscar elemento">
+                <input name="element_query" type="search" placeholder="Buscar elemento" value="${escapeAttr(searchParams.get('buscar') || '')}" data-element-filter data-filter-mode="admin-project" data-project-id="${escapeAttr(projectId)}" data-current-page="${escapeAttr(currentPage)}" data-filter-target="#admin-project-elements" data-summary-target="[data-elements-summary]" data-pagination-target="[data-elements-pagination]" aria-label="Buscar elemento">
               </div>
               <a class="button primary" href="${routePath(`/admin/proyectos/${projectId}/elementos/nuevo/`)}">Nuevo elemento</a>
             </div>
           </div>
-          ${rows || emptyState(elementFilter ? 'No hay elementos que coincidan con la busqueda.' : 'Este proyecto todavia no tiene elementos.')}
-          ${pagination}
+          <div id="admin-project-elements">${rows || emptyState(elementFilter ? 'No hay elementos que coincidan con la busqueda.' : 'Este proyecto todavia no tiene elementos.')}</div>
+          <div data-elements-pagination>${pagination}</div>
         </section>
       ` : ''}
     `
