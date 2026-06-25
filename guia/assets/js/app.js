@@ -204,58 +204,68 @@ function initScrollReveal() {
     revealObserver.observe(item);
   });
 }
-function updateSearchParam(value) {
-  const params = new URLSearchParams(location.search);
-  if (value) params.set('buscar', value);
-  else params.delete('buscar');
-  params.delete('pagina');
-  const query = params.toString();
-  history.replaceState({}, '', `${location.pathname}${query ? `?${query}` : ''}`);
+function restoreFilterFocus(input, selectionStart, selectionEnd) {
+  requestAnimationFrame(() => {
+    if (!input.isConnected) return;
+    input.focus({ preventScroll: true });
+    if (typeof selectionStart === 'number' && typeof selectionEnd === 'number') {
+      input.setSelectionRange(selectionStart, selectionEnd);
+    }
+  });
 }
 
+function elementFilterText(element) {
+  return [element.title, element.slug, element.short_description, categoryName(element.category_id)]
+    .map((value) => String(value || '').toLowerCase())
+    .join(' ');
+}
 function matchesElementFilter(element, query) {
   if (!query) return true;
   return [element.title, element.slug, element.short_description, categoryName(element.category_id)]
     .some((value) => String(value || '').toLowerCase().includes(query));
 }
 
-function applyElementFilter(input) {
-  const value = input.value.trim();
-  const query = value.toLowerCase();
-  updateSearchParam(value);
+function filterRenderedElements(input) {
+  const target = document.querySelector(input.dataset.filterTarget);
+  if (!target) return { visible: 0, total: 0 };
+  const query = input.value.trim().toLowerCase();
+  const currentPage = Number(input.dataset.currentPage || 1);
+  const items = [...target.querySelectorAll('[data-filter-text]')];
+  let visible = 0;
 
-  if (input.dataset.filterMode === 'public-project') {
-    const target = document.querySelector(input.dataset.filterTarget);
-    if (!target) return;
-    const categoryId = input.dataset.categoryId || 'todas';
-    const elements = activeElements(input.dataset.projectId)
-      .filter((element) => categoryId === 'todas' || element.category_id === categoryId)
-      .filter((element) => matchesElementFilter(element, query));
-    target.innerHTML = elements.map(elementCard).join('') || emptyState(query ? 'No hay elementos que coincidan con la busqueda.' : 'No hay elementos para este filtro.');
-    queueScrollReveal();
-    return;
-  }
+  items.forEach((item) => {
+    const textMatch = !query || item.dataset.filterText.includes(query);
+    const pageMatch = input.dataset.filterMode !== 'admin-project' || query || Number(item.dataset.page || 1) === currentPage;
+    const show = textMatch && pageMatch;
+    item.hidden = !show;
+    if (textMatch) visible += 1;
+  });
+
+  const empty = target.querySelector('[data-filter-empty]');
+  if (empty) empty.hidden = items.some((item) => !item.hidden);
+  return { visible, total: items.length };
+}
+
+function applyElementFilter(input) {
+  const selectionStart = input.selectionStart;
+  const selectionEnd = input.selectionEnd;
+  const query = input.value.trim().toLowerCase();
+  const result = filterRenderedElements(input);
 
   if (input.dataset.filterMode === 'admin-project') {
-    const target = document.querySelector(input.dataset.filterTarget);
     const summary = document.querySelector(input.dataset.summaryTarget || '');
     const pagination = document.querySelector(input.dataset.paginationTarget || '');
-    if (!target) return;
-    const allElements = state.elements.filter((element) => element.project_id === input.dataset.projectId).sort(bySort);
     const pageSize = 10;
     const currentPage = Number(input.dataset.currentPage || 1);
-    const filtered = allElements.filter((element) => matchesElementFilter(element, query));
-    const visible = query ? filtered : filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-    target.innerHTML = visible.map((element) => adminGoRow({
-      title: element.title,
-      meta: `${categoryName(element.category_id)} - ${element.active ? 'Activo' : 'Inactivo'}`,
-      href: routePath(`/admin/elementos/${element.id}/`),
-      compact: true
-    })).join('') || emptyState(query ? 'No hay elementos que coincidan con la busqueda.' : 'Este proyecto todavia no tiene elementos.');
-    if (summary) summary.textContent = filtered.length ? `${query ? 1 : ((currentPage - 1) * pageSize) + 1}-${query ? filtered.length : Math.min(currentPage * pageSize, filtered.length)} de ${filtered.length}` : (query ? 'Sin coincidencias' : 'Sin elementos');
+    if (summary) {
+      const first = query ? 1 : ((currentPage - 1) * pageSize) + 1;
+      const last = query ? result.visible : Math.min(currentPage * pageSize, result.visible);
+      summary.textContent = result.visible ? `${first}-${last} de ${result.visible}` : (query ? 'Sin coincidencias' : 'Sin elementos');
+    }
     if (pagination) pagination.hidden = Boolean(query);
-    queueScrollReveal();
   }
+
+  restoreFilterFocus(input, selectionStart, selectionEnd);
 }
 function currentRoute() {
   const path = window.location.pathname.startsWith(BASE_PATH)
@@ -394,13 +404,13 @@ function renderProject(slug) {
         <input name="element_query" type="search" placeholder="Buscar elemento" value="${escapeAttr(searchParams.get('buscar') || '')}" data-element-filter data-filter-mode="public-project" data-project-id="${escapeAttr(project.id)}" data-category-id="${escapeAttr(selectedCategory)}" data-filter-target="#project-elements-cards" aria-label="Buscar elemento">
       </div>
     </section>
-    <section id="project-elements-cards" class="cards-grid">${elements.map(elementCard).join('') || emptyState(elementFilter ? 'No hay elementos que coincidan con la busqueda.' : 'No hay elementos para este filtro.')}</section>
+    <section id="project-elements-cards" class="cards-grid">${elements.map((element) => elementCard(element, { hidden: elementFilter && !matchesElementFilter(element, elementFilter) })).join('')}<div class="empty" data-filter-empty ${elements.some((element) => matchesElementFilter(element, elementFilter)) ? 'hidden' : ''}>${elementFilter ? 'No hay elementos que coincidan con la busqueda.' : 'No hay elementos para este filtro.'}</div></section>
   `;
 }
-function elementCard(element) {
+function elementCard(element, options = {}) {
   const audio = state.audios.find((item) => item.element_id === element.id);
   return `
-    <article class="place-card">
+    <article class="place-card" data-filter-text="${escapeAttr(elementFilterText(element))}" ${options.hidden ? 'hidden' : ''}>
       <a class="card-media-link" href="${elementUrl(element)}" aria-label="Ver informacion de ${escapeAttr(element.title)}"><img src="${escapeAttr(element.main_image_url)}" alt="Imagen de ${escapeAttr(element.title)}" loading="lazy"></a>
       <div class="place-card-body">
         <p class="tag">${escapeHtml(categoryName(element.category_id))}</p>
@@ -566,13 +576,15 @@ function renderAdminProjectEditor(projectId) {
   const currentPage = Math.min(Math.max(1, safeRequestedPage), totalPages);
   const pageStart = (currentPage - 1) * pageSize;
   const elements = filteredElements.slice(pageStart, pageStart + pageSize);
-  const rows = elements.map((element) => adminGoRow({
+  const rows = allElements.map((element, index) => adminGoRow({
     title: element.title,
     meta: `${categoryName(element.category_id)} - ${element.active ? 'Activo' : 'Inactivo'}`,
     href: routePath(`/admin/elementos/${element.id}/`),
-    compact: true
-  })).join('');
-  const pagination = projectId && filteredElements.length > pageSize ? adminPagination({
+    compact: true,
+    filterText: elementFilterText(element),
+    page: Math.floor(index / pageSize) + 1,
+    hidden: elementFilter ? !matchesElementFilter(element, elementFilter) : Math.floor(index / pageSize) + 1 !== currentPage
+  })).join('');  const pagination = projectId && filteredElements.length > pageSize ? adminPagination({
     currentPage,
     totalPages,
     totalItems: filteredElements.length,
@@ -599,7 +611,7 @@ function renderAdminProjectEditor(projectId) {
               <a class="button primary" href="${routePath(`/admin/proyectos/${projectId}/elementos/nuevo/`)}">Nuevo elemento</a>
             </div>
           </div>
-          <div id="admin-project-elements">${rows || emptyState(elementFilter ? 'No hay elementos que coincidan con la busqueda.' : 'Este proyecto todavia no tiene elementos.')}</div>
+          <div id="admin-project-elements">${rows}<div class="empty" data-filter-empty ${filteredElements.length ? 'hidden' : ''}>${elementFilter ? 'No hay elementos que coincidan con la busqueda.' : 'Este proyecto todavia no tiene elementos.'}</div></div>
           <div data-elements-pagination>${pagination}</div>
         </section>
       ` : ''}
@@ -836,9 +848,9 @@ function adminPagination({ currentPage, totalPages, totalItems, baseHref }) {
   `;
 }
 
-function adminGoRow({ title, meta, href, compact = false }) {
+function adminGoRow({ title, meta, href, compact = false, filterText = '', page = 1, hidden = false }) {
   return `
-    <article class="admin-row is-clickable${compact ? ' is-compact' : ''}" data-command="go" data-href="${escapeAttr(href)}">
+    <article class="admin-row is-clickable${compact ? ' is-compact' : ''}" data-command="go" data-href="${escapeAttr(href)}" data-filter-text="${escapeAttr(filterText)}" data-page="${escapeAttr(page)}" ${hidden ? 'hidden' : ''}>
       <div><strong>${escapeHtml(title)}</strong><span>${escapeHtml(meta || '')}</span></div>
       <a class="button secondary" href="${escapeAttr(href)}" aria-label="Ir a ${escapeAttr(title)}">Ir</a>
     </article>
@@ -901,7 +913,6 @@ async function handleCommand(button, event) {
   if (command === 'go' && !event.target.closest('a, button')) navigate(button.dataset.href);
   if (command === 'toggle-more') {
     document.querySelector('[data-more]')?.toggleAttribute('hidden');
-    queueScrollReveal();
   }
   if (command === 'logout') {
     await signOut();
