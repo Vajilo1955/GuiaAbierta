@@ -331,7 +331,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .project-hero img, .detail-head img {
   width: 100%;
   aspect-ratio: 4 / 3;
-  object-fit: contain;
+  object-fit: scale-down;
   background: #eef3ef;
   border-radius: 8px;
   box-shadow: var(--shadow);
@@ -389,7 +389,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   height: 100%;
   max-width: 100%;
   max-height: 100%;
-  object-fit: contain;
+  object-fit: scale-down;
   object-position: center;
 }
 .gallery-more {
@@ -611,7 +611,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   height: 100%;
   max-width: 100%;
   max-height: 100%;
-  object-fit: contain;
+  object-fit: scale-down;
   object-position: center;
 }
 .media-type-icon {
@@ -721,7 +721,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   width: min(520px, 100%);
   aspect-ratio: 4 / 3;
   max-height: 360px;
-  object-fit: contain;
+  object-fit: scale-down;
   background: #eef3ef;
   border-radius: 8px;
 }
