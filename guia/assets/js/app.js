@@ -851,11 +851,11 @@ function renderAdminMediaSections(elementId) {
 function adminMediaTile(item) {
   const title = item.title || mediaKindLabel(item.kind);
   const preview = item.kind === 'image'
-    ? `<img src="${escapeAttr(item.thumbnail_url || item.url)}" alt="${escapeAttr(title)}">`
+    ? `<img class="media-preview-image" style="position:absolute;inset:0;width:100%;height:100%;max-width:none;max-height:none;object-fit:contain;object-position:center;" src="${escapeAttr(item.thumbnail_url || item.url)}" alt="${escapeAttr(title)}">`
     : `<span class="media-type-icon">${icon(item.kind)}</span>`;
   return `
     <article class="media-tile">
-      <div class="media-preview">${preview}</div>
+      <div class="media-preview" style="position:relative;display:block;width:100%;height:122px;overflow:hidden;background:#eef3ef;border-radius:7px;">${preview}</div>
       <div class="media-tile-text">
         <strong>${escapeHtml(title)}</strong>
         <span>${escapeHtml(item.meta || mediaKindLabel(item.kind))}</span>

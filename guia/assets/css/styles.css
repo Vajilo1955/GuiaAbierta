@@ -607,21 +607,23 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .media-preview {
   position: relative;
   display: block;
-  aspect-ratio: 4 / 3;
+  width: 100%;
+  height: 122px;
   overflow: hidden;
   background: #eef3ef;
   border-radius: 7px;
 }
-.media-preview img {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  max-width: none;
-  max-height: none;
-  object-fit: contain;
-  object-position: center;
+.media-preview img,
+.media-preview-image {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: center !important;
 }
 .media-type-icon {
   display: grid;
