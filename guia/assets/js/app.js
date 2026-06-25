@@ -72,6 +72,21 @@ document.addEventListener('submit', async (event) => {
   event.preventDefault();
   await handleAction(form);
 });
+let elementFilterTimer;
+document.addEventListener('input', (event) => {
+  const input = event.target.closest('[data-element-filter]');
+  if (!input) return;
+  clearTimeout(elementFilterTimer);
+  elementFilterTimer = setTimeout(() => {
+    const params = new URLSearchParams(location.search);
+    const value = input.value.trim();
+    if (value) params.set('buscar', value);
+    else params.delete('buscar');
+    params.delete('pagina');
+    const query = params.toString();
+    navigate(`${location.pathname}${query ? `?${query}` : ''}`);
+  }, 180);
+});
 
 document.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-command]');
@@ -227,7 +242,7 @@ function categoryName(id) {
 }
 
 function inactiveBadge(item) {
-  return item && item.active === false && state.session ? ' <span class="inactive-badge">INACTIVO</span>' : '';
+  return item && (item.active === false || item.active === 'false') && state.session ? ' <span class="inactive-badge">INACTIVO</span>' : '';
 }
 
 function renderLanding() {
@@ -239,7 +254,7 @@ function renderLanding() {
         <p>Descubre los lugares importantes de tu localidad con imagenes, audios, mapas y enlaces utiles. Una guia pensada para ayudarte a orientarte, conocer tu entorno y acceder mejor a los servicios cercanos.</p>
         <div class="actions">
           <a class="button primary" href="${routePath('/proyectos/')}">Ver guias disponibles</a>
-          <a class="button secondary" href="${routePath('/admin/')}">Acceso administradores</a>
+
         </div>
       </div>
       <div class="phone-mockup" aria-label="Vista previa movil de GuiaAbierta">
@@ -489,13 +504,18 @@ function renderAdminProjectEditor(projectId) {
   if (projectId && !project) return renderNotFound();
 
   const allElements = projectId ? state.elements.filter((element) => element.project_id === projectId).sort(bySort) : [];
+  const searchParams = new URLSearchParams(location.search);
+  const elementFilter = (searchParams.get('buscar') || '').trim().toLowerCase();
+  const filteredElements = elementFilter
+    ? allElements.filter((element) => [element.title, element.slug, categoryName(element.category_id)].some((value) => String(value || '').toLowerCase().includes(elementFilter)))
+    : allElements;
   const pageSize = 10;
-  const requestedPage = Number(new URLSearchParams(location.search).get('pagina') || 1);
+  const requestedPage = Number(searchParams.get('pagina') || 1);
   const safeRequestedPage = Number.isFinite(requestedPage) ? Math.floor(requestedPage) : 1;
-  const totalPages = Math.max(1, Math.ceil(allElements.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(filteredElements.length / pageSize));
   const currentPage = Math.min(Math.max(1, safeRequestedPage), totalPages);
   const pageStart = (currentPage - 1) * pageSize;
-  const elements = allElements.slice(pageStart, pageStart + pageSize);
+  const elements = filteredElements.slice(pageStart, pageStart + pageSize);
   const rows = elements.map((element) => adminGoRow({
     title: element.title,
     meta: `${categoryName(element.category_id)} - ${element.active ? 'Activo' : 'Inactivo'}`,
@@ -503,11 +523,11 @@ function renderAdminProjectEditor(projectId) {
     compact: true
   })).join('');
   const elementOptions = allElements.map((element) => `<option value="${escapeAttr(element.title)}"></option>`).join('');
-  const pagination = projectId && allElements.length > pageSize ? adminPagination({
+  const pagination = projectId && filteredElements.length > pageSize ? adminPagination({
     currentPage,
     totalPages,
-    totalItems: allElements.length,
-    baseHref: routePath(`/admin/proyectos/${projectId}/`)
+    totalItems: filteredElements.length,
+    baseHref: `${routePath(`/admin/proyectos/${projectId}/`)}${elementFilter ? `?buscar=${encodeURIComponent(elementFilter)}` : ''}`
   }) : '';
 
   adminFrame(
@@ -521,19 +541,19 @@ function renderAdminProjectEditor(projectId) {
           <div class="list-title-row">
             <div>
               <h2>Elementos del proyecto</h2>
-              <p class="list-summary">${allElements.length ? `${pageStart + 1}-${pageStart + elements.length} de ${allElements.length}` : 'Sin elementos'}</p>
+              <p class="list-summary">${filteredElements.length ? `${pageStart + 1}-${pageStart + elements.length} de ${filteredElements.length}` : (elementFilter ? 'Sin coincidencias' : 'Sin elementos')}</p>
             </div>
             <div class="admin-inline-tools">
               <form class="admin-jump-form" data-action="jump-element">
                 <input type="hidden" name="project_id" value="${escapeAttr(projectId)}">
-                <input name="element_query" list="project-elements-list" placeholder="Buscar elemento">
+                <input name="element_query" list="project-elements-list" placeholder="Buscar elemento" value="${escapeAttr(searchParams.get('buscar') || '')}" data-element-filter>
                 <datalist id="project-elements-list">${elementOptions}</datalist>
                 <button class="button secondary" type="submit">Ir</button>
               </form>
               <a class="button primary" href="${routePath(`/admin/proyectos/${projectId}/elementos/nuevo/`)}">Nuevo elemento</a>
             </div>
           </div>
-          ${rows || emptyState('Este proyecto todavia no tiene elementos.')}
+          ${rows || emptyState(elementFilter ? 'No hay elementos que coincidan con la busqueda.' : 'Este proyecto todavia no tiene elementos.')}
           ${pagination}
         </section>
       ` : ''}
@@ -564,7 +584,7 @@ function renderAdminMediaEditor(elementId, kind = 'image', mediaId = '') {
   if (mediaId && !item) return renderNotFound();
 
   adminFrame(
-    mediaId ? `Editar ${mediaKindLabel(kind).toLowerCase()}` : 'Nuevo contenido',
+    mediaId ? `Editar ${mediaKindLabel(kind).toLowerCase()}` : newMediaLabel(kind),
     `Elemento: ${element.title}`,
     `
       <a class="back-link" href="${routePath(`/admin/elementos/${elementId}/`)}">Volver al elemento</a>
@@ -575,30 +595,33 @@ function renderAdminMediaEditor(elementId, kind = 'image', mediaId = '') {
 
 function projectReadOnly(project) {
   return `
-    <section class="panel readonly-panel">
-      ${project.cover_image_url ? `<img class="readonly-image" src="${escapeAttr(project.cover_image_url)}" alt="Imagen de ${escapeAttr(project.name)}">` : ''}
-      <dl class="readonly-grid">
-        <div><dt>Nombre</dt><dd>${escapeHtml(project.name)}</dd></div>
-        <div><dt>Slug</dt><dd>${escapeHtml(project.slug)}</dd></div>
-        <div><dt>Descripcion corta</dt><dd>${escapeHtml(project.short_description || 'Sin descripcion.')}</dd></div>
-        <div><dt>Orden</dt><dd>${escapeHtml(project.sort_order ?? 0)}</dd></div>
-        <div><dt>Estado</dt><dd>${project.active ? 'Activo' : 'Inactivo'}</dd></div>
-      </dl>
-      <div class="actions">
-        <a class="button secondary" href="${routePath(`/proyecto/${project.slug}/`)}">Ver pagina publica</a>
-        <button class="button primary" type="button" data-command="open-edit-modal" data-kind="project" data-id="${escapeAttr(project.id)}">Modificar</button>
-        <button class="button danger" type="button" data-command="confirm-delete" data-table="guia_projects" data-id="${escapeAttr(project.id)}" data-label="${escapeAttr(project.name)}" data-redirect="${routePath('/admin/')}">Borrar</button>
+    <section class="panel readonly-panel project-readonly-panel">
+      <div class="project-readonly-layout">
+        ${project.cover_image_url ? `<img class="readonly-image" src="${escapeAttr(project.cover_image_url)}" alt="Imagen de ${escapeAttr(project.name)}">` : ''}
+        <div class="readonly-info">
+          <dl class="readonly-grid">
+            <div><dt>Nombre</dt><dd>${escapeHtml(project.name)}</dd></div>
+            <div><dt>Slug</dt><dd>${escapeHtml(project.slug)}</dd></div>
+            <div><dt>Descripcion</dt><dd>${escapeHtml(project.short_description || 'Sin descripcion.')}</dd></div>
+            <div><dt>Orden</dt><dd>${escapeHtml(project.sort_order ?? 0)}</dd></div>
+            <div><dt>Estado</dt><dd>${project.active ? 'Activo' : 'Inactivo'}</dd></div>
+          </dl>
+          <div class="actions">
+            <a class="button secondary" href="${routePath(`/proyecto/${project.slug}/`)}">Ver pagina publica</a>
+            <button class="button primary" type="button" data-command="open-edit-modal" data-kind="project" data-id="${escapeAttr(project.id)}">Modificar</button>
+            <button class="button danger" type="button" data-command="confirm-delete" data-table="guia_projects" data-id="${escapeAttr(project.id)}" data-label="${escapeAttr(project.name)}" data-redirect="${routePath('/admin/')}">Borrar</button>
+          </div>
+        </div>
       </div>
     </section>
   `;
 }
-
 function elementReadOnly(element, project) {
   return `
     <section class="panel readonly-panel element-readonly-panel">
       <div class="element-readonly-layout">
         ${element.main_image_url ? `<img class="readonly-image" src="${escapeAttr(element.main_image_url)}" alt="Imagen de ${escapeAttr(element.title)}">` : ''}
-        <div class="element-readonly-info">
+        <div class="readonly-info">
           <dl class="readonly-grid">
             <div><dt>Titulo</dt><dd>${escapeHtml(element.title)}</dd></div>
             <div><dt>Slug</dt><dd>${escapeHtml(element.slug)}</dd></div>
@@ -666,6 +689,11 @@ function elementForm(element = {}) {
   `;
 }
 
+function newMediaLabel(kind) {
+  if (kind === 'audio') return 'Nuevo audio';
+  if (kind === 'link') return 'Nuevo enlace';
+  return 'Nueva imagen';
+}
 function mediaForm(elementId, item = {}) {
   const kind = item.kind || 'image';
   const fields = {
@@ -711,7 +739,7 @@ function renderAdminMediaSections(elementId) {
       <div class="list-title-row">
         <h2>Contenido multimedia</h2>
         <div class="admin-head-actions">
-          ${groups.map((group) => `<a class="button primary" href="${routePath(`/admin/elementos/${elementId}/media/nuevo/?tipo=${group.kind}`)}">Nueva ${mediaKindLabel(group.kind).toLowerCase()}</a>`).join('')}
+          ${groups.map((group) => `<a class="button primary" href="${routePath(`/admin/elementos/${elementId}/media/nuevo/?tipo=${group.kind}`)}">${newMediaLabel(group.kind)}</a>`).join('')}
         </div>
       </div>
       ${groups.map((group) => {
@@ -750,7 +778,7 @@ function option(value, label, selected) {
   return `<option value="${escapeAttr(value)}" ${selected === value ? 'selected' : ''}>${escapeHtml(label)}</option>`;
 }
 function adminPagination({ currentPage, totalPages, totalItems, baseHref }) {
-  const pageHref = (page) => `${baseHref}?pagina=${page}`;
+  const pageHref = (page) => `${baseHref}${baseHref.includes('?') ? '&' : '?'}pagina=${page}`;
   return `
     <nav class="admin-pagination" aria-label="Paginacion de elementos">
       <span>Pagina ${currentPage} de ${totalPages} - ${totalItems} elementos</span>
@@ -811,7 +839,10 @@ async function handleAction(form) {
     }
     if (action === 'jump-element') {
       const query = String(data.element_query || '').trim().toLowerCase();
-      const element = state.elements.find((item) => item.project_id === data.project_id && String(item.title || '').trim().toLowerCase() === query);
+      const projectElements = state.elements.filter((item) => item.project_id === data.project_id);
+      const exact = projectElements.find((item) => String(item.title || '').trim().toLowerCase() === query || String(item.slug || '').trim().toLowerCase() === query);
+      const partial = projectElements.find((item) => [item.title, item.slug, categoryName(item.category_id)].some((value) => String(value || '').toLowerCase().includes(query)));
+      const element = exact || partial;
       if (!element) throw new Error('Selecciona un elemento de la lista.');
       navigate(routePath(`/admin/elementos/${element.id}/`));
       return;
