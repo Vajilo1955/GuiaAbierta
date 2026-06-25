@@ -20,7 +20,6 @@ const REVEAL_SELECTOR = [
   '.section',
   '.gallery-item',
   '.audio-card',
-  '.link-card',
   '.admin-head',
   '.admin-toolbar',
   '.admin-list-panel',
@@ -46,10 +45,12 @@ const state = {
   lightboxIndex: 0
 };
 
-menuButton.addEventListener('click', () => {
-  const open = nav.classList.toggle('is-open');
-  menuButton.setAttribute('aria-expanded', String(open));
-});
+if (menuButton && nav) {
+  menuButton.addEventListener('click', () => {
+    const open = nav.classList.toggle('is-open');
+    menuButton.setAttribute('aria-expanded', String(open));
+  });
+}
 
 window.addEventListener('popstate', render);
 document.addEventListener('click', (event) => {
@@ -109,8 +110,8 @@ async function init() {
 }
 function navigate(path) {
   history.pushState({}, '', path);
-  nav.classList.remove('is-open');
-  menuButton.setAttribute('aria-expanded', 'false');
+  nav?.classList.remove('is-open');
+  menuButton?.setAttribute('aria-expanded', 'false');
   render();
   window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   app.focus({ preventScroll: true });
@@ -458,6 +459,7 @@ function renderElement(projectSlug, elementSlug) {
   const images = state.images.filter((item) => item.element_id === element.id).sort(bySort);
   const audios = state.audios.filter((item) => item.element_id === element.id).sort(bySort);
   const links = state.links.filter((item) => item.element_id === element.id).sort(bySort);
+  const hasMoreInfo = Boolean((element.long_description || '').trim());
 
   app.innerHTML = `
     <article class="detail">
@@ -468,13 +470,12 @@ function renderElement(projectSlug, elementSlug) {
           <h1>${escapeHtml(element.title)}${inactiveBadge(element)}</h1>
           <p>${escapeHtml(element.short_description || '')}</p>
           <div class="actions">
-            <button class="button primary" type="button" data-command="toggle-more">+ informacion</button>
+            ${hasMoreInfo ? `<button class="button primary" type="button" data-command="show-more" data-element="${escapeAttr(element.id)}">+ informacion</button>` : ''}
             ${element.maps_url ? `<a class="button secondary" href="${escapeAttr(element.maps_url)}" target="_blank" rel="noreferrer">Como llegar</a>` : ''}
           </div>
         </div>
         <img src="${escapeAttr(element.main_image_url)}" alt="Imagen principal de ${escapeAttr(element.title)}">
       </header>
-      <section class="more-info" data-more hidden><h2>Informacion ampliada</h2><p>${escapeHtml(element.long_description || 'Sin informacion ampliada.')}</p></section>
       <section class="section"><h2>Galeria</h2>${renderGallery(images, element.title)}</section>
       <section class="section"><h2>Audios</h2>${renderAudios(audios)}</section>
       <section class="section"><h2>Enlaces utiles</h2>${renderLinks(links)}</section>
@@ -484,7 +485,7 @@ function renderElement(projectSlug, elementSlug) {
 
 function renderGallery(images, title) {
   if (!images.length) return emptyState('No hay imagenes disponibles.');
-  return `<div class="gallery count-${images.length}">${images.map((image, index) => `<button type="button" class="gallery-item" data-command="open-lightbox" data-element-images="${escapeAttr(image.element_id)}" data-index="${index}" aria-label="Abrir imagen ${index + 1} de ${escapeAttr(title)}"><img src="${escapeAttr(image.image_url)}" alt="${escapeAttr(image.title || title)}"></button>`).join('')}</div>`;
+  return `<div class="gallery count-${images.length}">${images.map((image, index) => `<button type="button" class="gallery-item" data-command="open-lightbox" data-element-images="${escapeAttr(image.element_id)}" data-index="${index}" aria-label="Abrir imagen ${index + 1} de ${escapeAttr(title)}"><img src="${escapeAttr(image.image_url)}" alt="${escapeAttr(image.title || title)}">${index === 2 && images.length > 3 ? `<span class="gallery-more">+${images.length - 3}</span>` : ''}</button>`).join('')}</div>`;
 }
 
 function renderAudios(audios) {
@@ -499,13 +500,11 @@ function renderAudios(audios) {
 
 function renderLinks(links) {
   if (!links.length) return emptyState('No hay enlaces disponibles.');
-  return `<div class="link-grid">${links.map((link) => `
-    <article class="link-card">
-      <p class="tag">${escapeHtml(link.type || 'Otro')}</p>
-      <h3>${escapeHtml(link.title)}</h3>
-      <a class="button secondary" href="${escapeAttr(link.url)}" target="_blank" rel="noreferrer">Abrir enlace</a>
-    </article>
-  `).join('')}</div>`;
+  return `<ul class="link-list">${links.map((link) => {
+    const title = link.title || 'Enlace';
+    const label = link.type ? `${link.type}: ${title}` : title;
+    return `<li><a href="${escapeAttr(link.url)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a></li>`;
+  }).join('')}</ul>`;
 }
 
 async function renderAdmin(parts = []) {
@@ -558,7 +557,6 @@ function adminFrame(title, subtitle, body, actions = '') {
     </section>
   `;
 }
-
 function renderAdminPasswordReset() {
   adminFrame(
     'Restaurar contrasena',
@@ -833,17 +831,15 @@ function renderAdminMediaSections(elementId) {
   const media = mediaForElement(elementId);
   return `
     <section class="admin-media-panel">
-      <div class="list-title-row">
-        <h2>Contenido multimedia</h2>
-        <div class="admin-head-actions">
-          ${groups.map((group) => `<a class="button primary" href="${routePath(`/admin/elementos/${elementId}/media/nuevo/?tipo=${group.kind}`)}">${newMediaLabel(group.kind)}</a>`).join('')}
-        </div>
-      </div>
+      <h2>Contenido multimedia</h2>
       ${groups.map((group) => {
         const items = media.filter((item) => item.kind === group.kind);
         return `
           <section class="admin-media-section">
-            <h3>${group.title}</h3>
+            <div class="admin-media-section-head">
+              <h3>${group.title}</h3>
+              <a class="button primary" href="${routePath(`/admin/elementos/${elementId}/media/nuevo/?tipo=${group.kind}`)}">${newMediaLabel(group.kind)}</a>
+            </div>
             ${items.length ? `<div class="admin-media-grid">${items.map(adminMediaTile).join('')}</div>` : emptyState(group.empty)}
           </section>
         `;
@@ -957,9 +953,8 @@ async function handleAction(form) {
 async function handleCommand(button, event) {
   const command = button.dataset.command;
   if (command === 'go' && !event.target.closest('a, button')) navigate(button.dataset.href);
-  if (command === 'toggle-more') {
-    document.querySelector('[data-more]')?.toggleAttribute('hidden');
-  }
+  if (command === 'show-more') showMoreInfoModal(button.dataset.element);
+  if (command === 'close-info') closeInfoModal();
   if (command === 'logout') {
     await signOut();
     state.session = null;
@@ -1191,6 +1186,32 @@ function mediaTable(kind) {
   }[kind];
 }
 
+function showMoreInfoModal(elementId) {
+  closeInfoModal();
+  const element = state.elements.find((item) => item.id === elementId);
+  if (!element || !(element.long_description || '').trim()) return;
+  const modal = document.createElement('div');
+  modal.className = 'confirm-backdrop';
+  modal.dataset.infoModal = 'true';
+  modal.innerHTML = `
+    <section class="confirm-modal info-modal" role="dialog" aria-modal="true" aria-labelledby="info-title">
+      <div class="modal-title-row">
+        <h2 id="info-title">Informacion ampliada</h2>
+        <button class="icon-action" type="button" data-command="close-info" aria-label="Cerrar">X</button>
+      </div>
+      <p>${escapeHtml(element.long_description)}</p>
+      <div class="actions">
+        <button class="button primary" type="button" data-command="close-info">Cerrar</button>
+      </div>
+    </section>
+  `;
+  document.body.append(modal);
+  modal.querySelector('[data-command="close-info"]')?.focus();
+}
+
+function closeInfoModal() {
+  document.querySelector('[data-info-modal]')?.remove();
+}
 function showDeleteModal({ table, id, label, redirect }) {
   closeDeleteModal();
   const modal = document.createElement('div');
