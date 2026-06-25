@@ -522,7 +522,6 @@ function renderAdminProjectEditor(projectId) {
     href: routePath(`/admin/elementos/${element.id}/`),
     compact: true
   })).join('');
-  const elementOptions = allElements.map((element) => `<option value="${escapeAttr(element.title)}"></option>`).join('');
   const pagination = projectId && filteredElements.length > pageSize ? adminPagination({
     currentPage,
     totalPages,
@@ -544,12 +543,9 @@ function renderAdminProjectEditor(projectId) {
               <p class="list-summary">${filteredElements.length ? `${pageStart + 1}-${pageStart + elements.length} de ${filteredElements.length}` : (elementFilter ? 'Sin coincidencias' : 'Sin elementos')}</p>
             </div>
             <div class="admin-inline-tools">
-              <form class="admin-jump-form" data-action="jump-element">
-                <input type="hidden" name="project_id" value="${escapeAttr(projectId)}">
-                <input name="element_query" list="project-elements-list" placeholder="Buscar elemento" value="${escapeAttr(searchParams.get('buscar') || '')}" data-element-filter>
-                <datalist id="project-elements-list">${elementOptions}</datalist>
-                <button class="button secondary" type="submit">Ir</button>
-              </form>
+              <div class="admin-search-control">
+                <input name="element_query" type="search" placeholder="Buscar elemento" value="${escapeAttr(searchParams.get('buscar') || '')}" data-element-filter aria-label="Buscar elemento">
+              </div>
               <a class="button primary" href="${routePath(`/admin/proyectos/${projectId}/elementos/nuevo/`)}">Nuevo elemento</a>
             </div>
           </div>
@@ -835,16 +831,6 @@ async function handleAction(form) {
       const saved = await upsert('guia_elements', elementPayload(data));
       await loadData();
       showSuccessModal('Elemento guardado correctamente.', routePath(`/admin/elementos/${saved.id}/`));
-      return;
-    }
-    if (action === 'jump-element') {
-      const query = String(data.element_query || '').trim().toLowerCase();
-      const projectElements = state.elements.filter((item) => item.project_id === data.project_id);
-      const exact = projectElements.find((item) => String(item.title || '').trim().toLowerCase() === query || String(item.slug || '').trim().toLowerCase() === query);
-      const partial = projectElements.find((item) => [item.title, item.slug, categoryName(item.category_id)].some((value) => String(value || '').toLowerCase().includes(query)));
-      const element = exact || partial;
-      if (!element) throw new Error('Selecciona un elemento de la lista.');
-      navigate(routePath(`/admin/elementos/${element.id}/`));
       return;
     }
     if (action === 'save-media') {
@@ -1229,4 +1215,3 @@ function escapeHtml(value = '') {
 function escapeAttr(value = '') {
   return escapeHtml(value);
 }
-
