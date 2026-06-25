@@ -221,7 +221,7 @@ function initScrollReveal() {
 
   items.forEach((item, index) => {
     item.classList.add('reveal-on-scroll');
-    item.style.setProperty('--reveal-delay', `${Math.min(index, 8) * 45}ms`);
+    item.style.setProperty('--reveal-delay', `${Math.min(index, 6) * 22}ms`);
     revealObserver.observe(item);
   });
 }
@@ -485,7 +485,7 @@ function renderElement(projectSlug, elementSlug) {
 
 function renderGallery(images, title) {
   if (!images.length) return emptyState('No hay imagenes disponibles.');
-  return `<div class="gallery count-${images.length}">${images.map((image, index) => `<button type="button" class="gallery-item" data-command="open-lightbox" data-element-images="${escapeAttr(image.element_id)}" data-index="${index}" aria-label="Abrir imagen ${index + 1} de ${escapeAttr(title)}"><img src="${escapeAttr(image.image_url)}" alt="${escapeAttr(image.title || title)}">${index === 2 && images.length > 3 ? `<span class="gallery-more">+${images.length - 3}</span>` : ''}</button>`).join('')}</div>`;
+  return `<div class="gallery count-${images.length}">${images.slice(0, 3).map((image, index) => `<button type="button" class="gallery-item" data-command="open-lightbox" data-element-images="${escapeAttr(image.element_id)}" data-index="${index}" aria-label="Abrir imagen ${index + 1} de ${escapeAttr(title)}"><img src="${escapeAttr(image.image_url)}" alt="${escapeAttr(image.title || title)}">${index === 2 && images.length > 3 ? `<span class="gallery-more">+${images.length - 3}</span>` : ''}</button>`).join('')}</div>`;
 }
 
 function renderAudios(audios) {
