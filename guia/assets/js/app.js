@@ -320,12 +320,18 @@ function renderProjects() {
 function renderProject(slug) {
   const project = state.projects.find((item) => item.slug === slug && (item.active || state.session));
   if (!project) return renderNotFound();
-  const selectedCategory = new URLSearchParams(location.search).get('categoria') || 'todas';
-  const elements = activeElements(project.id).filter((element) => selectedCategory === 'todas' || element.category_id === selectedCategory);
+  const searchParams = new URLSearchParams(location.search);
+  const selectedCategory = searchParams.get('categoria') || 'todas';
+  const elementFilter = (searchParams.get('buscar') || '').trim().toLowerCase();
+  const categoryElements = activeElements(project.id).filter((element) => selectedCategory === 'todas' || element.category_id === selectedCategory);
+  const elements = elementFilter
+    ? categoryElements.filter((element) => [element.title, element.slug, element.short_description, categoryName(element.category_id)].some((value) => String(value || '').toLowerCase().includes(elementFilter)))
+    : categoryElements;
   const filters = ['todas', ...state.categories.filter((c) => c.active).map((c) => c.id)].map((id) => {
     const label = id === 'todas' ? 'Todas' : categoryName(id);
     const active = selectedCategory === id ? ' aria-current="true"' : '';
-    return `<a class="chip" href="${routePath(`/proyecto/${project.slug}/`)}?categoria=${id}"${active}>${escapeHtml(label)}</a>`;
+    const query = elementFilter ? `&buscar=${encodeURIComponent(elementFilter)}` : '';
+    return `<a class="chip" href="${routePath(`/proyecto/${project.slug}/`)}?categoria=${id}${query}"${active}>${escapeHtml(label)}</a>`;
   }).join('');
 
   app.innerHTML = `
@@ -338,10 +344,14 @@ function renderProject(slug) {
       </div>
     </section>
     <section class="filter-row" aria-label="Filtrar por categoria">${filters}</section>
-    <section class="cards-grid">${elements.map(elementCard).join('') || emptyState('No hay elementos para este filtro.')}</section>
+    <section class="public-search-row">
+      <div class="admin-search-control public-search-control">
+        <input name="element_query" type="search" placeholder="Buscar elemento" value="${escapeAttr(searchParams.get('buscar') || '')}" data-element-filter aria-label="Buscar elemento">
+      </div>
+    </section>
+    <section class="cards-grid">${elements.map(elementCard).join('') || emptyState(elementFilter ? 'No hay elementos que coincidan con la busqueda.' : 'No hay elementos para este filtro.')}</section>
   `;
 }
-
 function elementCard(element) {
   const audio = state.audios.find((item) => item.element_id === element.id);
   return `
@@ -399,12 +409,7 @@ function renderElement(projectSlug, elementSlug) {
 
 function renderGallery(images, title) {
   if (!images.length) return emptyState('No hay imagenes disponibles.');
-  const visible = images.slice(0, Math.min(images.length, 3));
-  return `<div class="gallery count-${visible.length}">${visible.map((image, index) => {
-    const remaining = images.length - 3;
-    const overlay = index === 2 && remaining > 0 ? `<span class="gallery-more">+${remaining}</span>` : '';
-    return `<button type="button" class="gallery-item" data-command="open-lightbox" data-element-images="${escapeAttr(image.element_id)}" data-index="${index}" aria-label="Abrir imagen ${index + 1} de ${escapeAttr(title)}"><img src="${escapeAttr(image.image_url)}" alt="${escapeAttr(image.title || title)}">${overlay}</button>`;
-  }).join('')}</div>`;
+  return `<div class="gallery count-${images.length}">${images.map((image, index) => `<button type="button" class="gallery-item" data-command="open-lightbox" data-element-images="${escapeAttr(image.element_id)}" data-index="${index}" aria-label="Abrir imagen ${index + 1} de ${escapeAttr(title)}"><img src="${escapeAttr(image.image_url)}" alt="${escapeAttr(image.title || title)}"></button>`).join('')}</div>`;
 }
 
 function renderAudios(audios) {
