@@ -840,7 +840,7 @@ function renderAdminMediaSections(elementId) {
               <h3>${group.title}</h3>
               <a class="button primary" href="${routePath(`/admin/elementos/${elementId}/media/nuevo/?tipo=${group.kind}`)}">${newMediaLabel(group.kind)}</a>
             </div>
-            ${items.length ? `<div class="admin-media-grid">${items.map(adminMediaTile).join('')}</div>` : emptyState(group.empty)}
+            ${items.length ? renderAdminMediaGroup(group.kind, items) : emptyState(group.empty)}
           </section>
         `;
       }).join('')}
@@ -848,6 +848,45 @@ function renderAdminMediaSections(elementId) {
   `;
 }
 
+function renderAdminMediaGroup(kind, items) {
+  if (kind === 'audio') return `<div class="audio-list admin-audio-list">${items.map(adminAudioCard).join('')}</div>`;
+  if (kind === 'link') return `<ul class="link-list admin-link-list">${items.map(adminLinkItem).join('')}</ul>`;
+  return `<div class="admin-media-grid">${items.map(adminMediaTile).join('')}</div>`;
+}
+
+function adminMediaActions(item, title) {
+  return `
+    <span class="admin-inline-actions">
+      <a class="icon-action" href="${routePath(`/admin/elementos/${item.element_id}/media/${item.kind}/${item.id}/`)}" aria-label="Editar ${escapeAttr(title)}" title="Editar">${icon('edit')}</a>
+      <button class="icon-action danger" type="button" data-command="confirm-delete" data-table="${escapeAttr(mediaTable(item.kind))}" data-id="${escapeAttr(item.id)}" data-label="${escapeAttr(title)}" data-redirect="${routePath(`/admin/elementos/${item.element_id}/`)}" aria-label="Borrar ${escapeAttr(title)}" title="Borrar">${icon('trash')}</button>
+    </span>
+  `;
+}
+
+function adminAudioCard(item) {
+  const title = item.title || 'Audio guia';
+  const language = item.meta || 'Idioma no indicado';
+  return `
+    <article class="audio-card admin-audio-card">
+      <div class="admin-media-card-head">
+        <h3>${escapeHtml(title)} - ${escapeHtml(language)}</h3>
+        ${adminMediaActions(item, title)}
+      </div>
+      <audio controls preload="none" src="${escapeAttr(item.url)}"></audio>
+    </article>
+  `;
+}
+
+function adminLinkItem(item) {
+  const title = item.title || 'Enlace';
+  const label = item.meta ? `${item.meta}: ${title}` : title;
+  return `
+    <li class="admin-link-item">
+      <a href="${escapeAttr(item.url)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>
+      ${adminMediaActions(item, title)}
+    </li>
+  `;
+}
 function adminMediaTile(item) {
   const title = item.title || mediaKindLabel(item.kind);
   const preview = item.kind === 'image'
