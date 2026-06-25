@@ -112,7 +112,8 @@ function navigate(path) {
   nav.classList.remove('is-open');
   menuButton.setAttribute('aria-expanded', 'false');
   render();
-  app.focus();
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  app.focus({ preventScroll: true });
 }
 
 function getBasePath() {
@@ -609,15 +610,20 @@ function renderAdminProjectEditor(projectId) {
   const currentPage = Math.min(Math.max(1, safeRequestedPage), totalPages);
   const pageStart = (currentPage - 1) * pageSize;
   const elements = filteredElements.slice(pageStart, pageStart + pageSize);
-  const rows = allElements.map((element, index) => adminGoRow({
-    title: element.title,
-    meta: `${categoryName(element.category_id)} - ${element.active ? 'Activo' : 'Inactivo'}`,
-    href: routePath(`/admin/elementos/${element.id}/`),
-    compact: true,
-    filterText: elementFilterText(element),
-    page: Math.floor(index / pageSize) + 1,
-    hidden: elementFilter ? !matchesElementFilter(element, elementFilter) : Math.floor(index / pageSize) + 1 !== currentPage
-  })).join('');  const pagination = projectId && filteredElements.length > pageSize ? adminPagination({
+  const filteredPositions = new Map(filteredElements.map((element, index) => [element.id, index]));
+  const rows = allElements.map((element) => {
+    const filteredIndex = filteredPositions.has(element.id) ? filteredPositions.get(element.id) : -1;
+    return adminGoRow({
+      title: element.title,
+      meta: `${categoryName(element.category_id)} - ${element.active ? 'Activo' : 'Inactivo'}`,
+      href: routePath(`/admin/elementos/${element.id}/`),
+      compact: true,
+      filterText: elementFilterText(element),
+      page: filteredIndex >= 0 ? Math.floor(filteredIndex / pageSize) + 1 : 0,
+      hidden: filteredIndex < pageStart || filteredIndex >= pageStart + pageSize
+    });
+  }).join('');
+  const pagination = projectId && filteredElements.length > pageSize ? adminPagination({
     currentPage,
     totalPages,
     totalItems: filteredElements.length,
