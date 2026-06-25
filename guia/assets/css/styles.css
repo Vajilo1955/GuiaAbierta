@@ -301,21 +301,22 @@ button, a { -webkit-tap-highlight-color: transparent; }
 }
 .place-card { grid-template-rows: 250px minmax(0, 1fr); }
 .project-card .card-media-link, .place-card .card-media-link {
-  display: grid;
-  place-items: center;
+  position: relative;
+  display: block;
   width: 100%;
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  padding: .5rem;
   background: #eef3ef;
 }
-.project-card img, .place-card img {
+.project-card .card-media-link img, .place-card .card-media-link img {
+  position: absolute;
+  inset: .5rem;
   display: block;
-  width: 100%;
-  height: 100%;
-  max-width: 100%;
-  max-height: 100%;
+  width: calc(100% - 1rem);
+  height: calc(100% - 1rem);
+  max-width: none;
+  max-height: none;
   object-fit: contain;
   object-position: center;
 }
@@ -336,7 +337,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .project-hero img, .detail-head img {
   width: 100%;
   aspect-ratio: 4 / 3;
-  object-fit: scale-down;
+  object-fit: contain;
   background: #eef3ef;
   border-radius: 8px;
   box-shadow: var(--shadow);
@@ -376,8 +377,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 }
 .gallery-item {
   position: relative;
-  display: grid;
-  place-items: center;
+  display: block;
   width: 180px;
   aspect-ratio: 4 / 3;
   height: auto;
@@ -389,12 +389,14 @@ button, a { -webkit-tap-highlight-color: transparent; }
   cursor: pointer;
 }
 .gallery-item img {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: scale-down;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
   object-position: center;
 }
 .gallery-more {
@@ -616,7 +618,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   height: 100%;
   max-width: 100%;
   max-height: 100%;
-  object-fit: scale-down;
+  object-fit: contain;
   object-position: center;
 }
 .media-type-icon {
@@ -726,7 +728,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   width: min(520px, 100%);
   aspect-ratio: 4 / 3;
   max-height: 360px;
-  object-fit: scale-down;
+  object-fit: contain;
   background: #eef3ef;
   border-radius: 8px;
 }
