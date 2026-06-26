@@ -359,10 +359,10 @@ function renderLanding() {
       </div>
     </section>
     <section class="info-grid section">
-      ${infoBlock('Para quien', 'Personas recien llegadas, casas de acogida, visitantes y cualquier persona que necesite informacion local sencilla.')}
-      ${infoBlock('Como funciona', 'Elige una guia, abre un lugar y consulta imagenes, textos claros, audios, mapas y enlaces utiles.')}
-      ${infoBlock('Que puedes encontrar', 'Monumentos, instituciones, salud, transporte, cultura, educacion, ayuda social y otros servicios.')}
-      ${infoBlock('Ventajas', 'Contenido visual, audios en varios idiomas, botones grandes, buen contraste y navegacion pensada para movil.')}
+      ${infoBlock('Para quien', 'Personas recién llegadas, visitantes y cualquier persona que necesite información local sencilla.')}
+      ${infoBlock('Como funciona', 'Elige una guía, abre un lugar y consulta imágenes, textos claros, audios, mapas y enlaces útiles.')}
+      ${infoBlock('Que puedes encontrar', 'Monumentos, instituciones, salud, transporte, cultura, educación, ayuda social y otros servicios.')}
+      <!-- ${infoBlock('Ventajas', 'Contenido visual, audios en varios idiomas, botones grandes, buen contraste y navegación pensada para móvil.')} -->
     </section>
   `;
 }
