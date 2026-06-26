@@ -945,6 +945,21 @@ button, a { -webkit-tap-highlight-color: transparent; }
     width: calc(100% - 1rem);
     max-width: 420px;
   }
+  .detail-head .actions {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: .55rem;
+  }
+  .detail-head .actions .button {
+    width: 75%;
+    min-height: 40px;
+    padding: .55rem .85rem;
+  }
+  .detail-head .actions .detail-map-link {
+    width: 40px;
+    height: 40px;
+    margin-left: 0;
+  }
   .actions .button { width: 100%; }
   .admin-head { display: grid; }
   .admin-list article { grid-template-columns: 1fr; }
