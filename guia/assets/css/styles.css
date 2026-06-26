@@ -367,7 +367,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   border-radius: 8px;
   box-shadow: var(--shadow);
 }
-.back-link { display: inline-block; margin-bottom: 1rem; color: var(--primary-dark); font-weight: 800; }
+.back-link { display: inline-block; margin-bottom: 1rem; color: var(--primary-dark); font-weight: 400; }
 .public-search-row { padding: 0 0 1.25rem; }
 .public-search-control { max-width: 420px; }
 .filter-row {
@@ -388,6 +388,22 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .chip[aria-current="true"] { color: #fff; background: var(--sky); border-color: var(--sky); }
 
 .detail { padding: 2rem 0 4rem; }
+.detail-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: .5rem;
+}
+.detail-topline .tag,
+.detail-topline .back-link { margin: 0; }
+.detail-back-link {
+  text-align: right;
+  white-space: nowrap;
+}
+.detail-map-link {
+  margin-left: .15rem;
+}
 .detail-head {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 460px);
@@ -437,7 +453,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 .audio-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   justify-content: start;
   gap: .8rem;
 }
@@ -447,7 +463,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   margin: 0;
   padding-left: 1.1rem;
 }
-.link-list a { color: var(--primary-dark); font-weight: 800; }
+.link-list a { color: var(--primary-dark); font-weight: 400; }
 .audio-card {
   width: 100%;
   padding: .7rem .75rem;
@@ -621,7 +637,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   gap: .7rem;
 }
 .admin-audio-list {
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 }
 .admin-media-card-head,
 .admin-link-item {
@@ -926,7 +942,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
     justify-items: center;
   }
   .audio-card {
-    width: calc(100% - 2rem);
+    width: calc(100% - 1rem);
     max-width: 420px;
   }
   .actions .button { width: 100%; }

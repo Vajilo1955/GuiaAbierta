@@ -460,15 +460,14 @@ function renderElement(projectSlug, elementSlug) {
 
   app.innerHTML = `
     <article class="detail">
-      <a class="back-link" href="${routePath(`/proyecto/${project.slug}/`)}">Volver a ${escapeHtml(project.name)}</a>
       <header class="detail-head">
         <div>
-          <p class="tag">${escapeHtml(categoryName(element.category_id))}</p>
+          <div class="detail-topline"><p class="tag">${escapeHtml(categoryName(element.category_id))}</p><a class="back-link detail-back-link" href="${routePath(`/proyecto/${project.slug}/`)}">Volver a ${escapeHtml(project.name)}</a></div>
           <h1>${escapeHtml(element.title)}${inactiveBadge(element)}</h1>
           <p>${escapeHtml(element.short_description || '')}</p>
           <div class="actions">
-            ${hasMoreInfo ? `<button class="button primary" type="button" data-command="show-more" data-element="${escapeAttr(element.id)}">+ informacion</button>` : ''}
-            ${element.maps_url ? `<a class="button secondary" href="${escapeAttr(element.maps_url)}" target="_blank" rel="noreferrer">Como llegar</a>` : ''}
+            ${hasMoreInfo ? `<button class="button primary" type="button" data-command="show-more" data-element="${escapeAttr(element.id)}">+ info</button>` : ''}
+            ${element.maps_url ? `<a class="map-icon-link detail-map-link" href="${escapeAttr(element.maps_url)}" target="_blank" rel="noreferrer" aria-label="Como llegar a ${escapeAttr(element.title)}" title="Como llegar">${icon('location')}</a>` : ''}
           </div>
         </div>
         <img src="${escapeAttr(element.main_image_url)}" alt="Imagen principal de ${escapeAttr(element.title)}">
