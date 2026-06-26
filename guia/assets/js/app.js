@@ -429,19 +429,16 @@ function renderProject(slug) {
   `;
 }
 function elementCard(element, options = {}) {
-  const audio = state.audios.find((item) => item.element_id === element.id);
   return `
     <article class="place-card" data-filter-text="${escapeAttr(elementFilterText(element))}" ${options.hidden ? 'hidden' : ''}>
       <a class="card-media-link" href="${elementUrl(element)}" aria-label="Ver informacion de ${escapeAttr(element.title)}"><img src="${escapeAttr(element.main_image_url)}" alt="Imagen de ${escapeAttr(element.title)}" loading="lazy"></a>
       <div class="place-card-body">
-        <p class="tag">${escapeHtml(categoryName(element.category_id))}</p>
+        <div class="place-card-meta">
+          <p class="tag">${escapeHtml(categoryName(element.category_id))}</p>
+          ${element.maps_url ? `<a class="map-icon-link" href="${escapeAttr(element.maps_url)}" target="_blank" rel="noreferrer" aria-label="Como llegar a ${escapeAttr(element.title)}" title="Como llegar">${icon('location')}</a>` : ''}
+        </div>
         <h2><a href="${elementUrl(element)}">${escapeHtml(element.title)}</a>${inactiveBadge(element)}</h2>
         <p>${escapeHtml(element.short_description || '')}</p>
-        <div class="actions compact">
-          <a class="button primary" href="${elementUrl(element)}">Ver informacion</a>
-          ${element.maps_url ? `<a class="button secondary" href="${escapeAttr(element.maps_url)}" target="_blank" rel="noreferrer">Como llegar</a>` : ''}
-          ${audio ? `<button class="button ghost" type="button" data-command="play-audio" data-audio="${escapeAttr(audio.id)}">Escuchar audio</button>` : ''}
-        </div>
       </div>
     </article>
   `;
@@ -943,6 +940,7 @@ function adminRow({ title, meta, editHref, deleteTable, deleteId, deleteLabel, d
 }
 
 function icon(name) {
+  if (name === 'location') return '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5Z"/></svg>';
   if (name === 'trash') return '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-.7 11H7.7L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z"/></svg>';
   if (name === 'audio') return '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4Zm12.5-2.5-1.4 1.4a5.9 5.9 0 0 1 0 8.2l1.4 1.4a7.8 7.8 0 0 0 0-11Zm2.8-2.8-1.4 1.4a11.9 11.9 0 0 1 0 13.8l1.4 1.4a13.9 13.9 0 0 0 0-16.6Z"/></svg>';
   if (name === 'link') return '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10.6 13.4a1.5 1.5 0 0 1 0-2.1l2.8-2.8a3 3 0 0 1 4.2 4.2l-2 2a5 5 0 0 0 .2-2.6l.4-.4a1 1 0 0 0-1.4-1.4L12 13.1a1.5 1.5 0 0 1-1.4.3Zm2.8-2.8a1.5 1.5 0 0 1 0 2.1l-2.8 2.8a3 3 0 1 1-4.2-4.2l2-2a5 5 0 0 0-.2 2.6l-.4.4a1 1 0 1 0 1.4 1.4l2.8-2.8a1.5 1.5 0 0 1 1.4-.3Z"/></svg>';
