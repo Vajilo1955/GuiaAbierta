@@ -28,6 +28,7 @@ const REVEAL_SELECTOR = [
   '.empty'
 ].join(',');
 let revealObserver;
+let deferredInstallPrompt = null;
 document.querySelectorAll('[data-route]').forEach((link) => {
   link.setAttribute('href', routePath(link.dataset.route || '/'));
 });
@@ -52,8 +53,24 @@ if (menuButton && nav) {
   });
 }
 
+window.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  document.querySelectorAll('[data-pwa-install]').forEach((link) => link.hidden = false);
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  document.querySelectorAll('[data-pwa-install]').forEach((link) => link.hidden = true);
+});
 window.addEventListener('popstate', render);
 document.addEventListener('click', (event) => {
+  const installLink = event.target.closest('[data-pwa-install]');
+  if (installLink) {
+    event.preventDefault();
+    installPwa();
+    return;
+  }
   const link = event.target.closest('a[href]');
   if (!link || link.target === '_blank' || event.metaKey || event.ctrlKey) return;
   if (link.dataset.route) {
@@ -107,6 +124,23 @@ async function init() {
   state.session = await getSession();
   await loadData();
   render();
+  registerServiceWorker();
+}
+async function installPwa() {
+  if (!deferredInstallPrompt) {
+    showToast('Usa la opcion de instalar de tu navegador si ya esta disponible.');
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice.catch(() => null);
+  deferredInstallPrompt = null;
+}
+
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register(routePath('/sw.js')).catch((error) => {
+    console.warn('No se pudo registrar el service worker.', error);
+  });
 }
 function navigate(path) {
   history.pushState({}, '', path);
@@ -546,7 +580,7 @@ function adminFrame(title, subtitle, body, actions = '') {
         </div>
         <div class="admin-head-actions">
           ${actions}
-          <button class="button secondary" type="button" data-command="logout">Cerrar sesion</button>
+          <button class="icon-action admin-logout-action" type="button" data-command="logout" aria-label="Cerrar sesion" title="Cerrar sesion">${icon('logout')}</button>
         </div>
       </div>
       ${body}
@@ -939,6 +973,7 @@ function adminRow({ title, meta, editHref, deleteTable, deleteId, deleteLabel, d
 }
 
 function icon(name) {
+  if (name === 'logout') return '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 3h9v2H6v14h7v2H4V3Zm10.7 4.3 1.4-1.4 5.1 5.1-5.1 5.1-1.4-1.4 2.7-2.7H10v-2h7.4l-2.7-2.7Z"/></svg>';
   if (name === 'location') return '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5Z"/></svg>';
   if (name === 'trash') return '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-.7 11H7.7L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z"/></svg>';
   if (name === 'audio') return '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4Zm12.5-2.5-1.4 1.4a5.9 5.9 0 0 1 0 8.2l1.4 1.4a7.8 7.8 0 0 0 0-11Zm2.8-2.8-1.4 1.4a11.9 11.9 0 0 1 0 13.8l1.4 1.4a13.9 13.9 0 0 0 0-16.6Z"/></svg>';

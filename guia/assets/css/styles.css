@@ -781,6 +781,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .icon-action:hover { background: #eef6f3; }
 .icon-action.danger { color: #a83232; }
 .icon-action.danger:hover { background: #fff1f1; }
+.admin-logout-action { color: var(--primary-dark); }
+.admin-logout-action:hover { background: #eef6f3; }
 
 .confirm-backdrop {
   position: fixed;
