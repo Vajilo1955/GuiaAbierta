@@ -368,28 +368,7 @@ function renderLanding() {
         </div>
       </div>
       <div class="phone-mockup" aria-label="Vista previa movil de GuiaAbierta">
-        <div class="phone-frame">
-          <span class="phone-side-button volume" aria-hidden="true"></span>
-          <span class="phone-side-button power" aria-hidden="true"></span>
-          <div class="phone-island" aria-hidden="true"></div>
-          <div class="phone-screen">
-            <div class="phone-appbar">
-              <span class="phone-logo">GA</span>
-              <span>GuiaAbierta</span>
-            </div>
-            <div class="phone-hero-card">
-              <p class="tag">Guia local</p>
-              <h2>Utrera</h2>
-              <p>Lugares, mapas, audios e informacion clara.</p>
-            </div>
-            <div class="phone-search"></div>
-            <div class="phone-list">
-              <article><span></span><div><strong>Arco de la Villa</strong><small>Monumentos</small></div></article>
-              <article><span></span><div><strong>Parque de Consolacion</strong><small>Zonas verdes</small></div></article>
-              <article><span></span><div><strong>Plaza del Altozano</strong><small>Centro urbano</small></div></article>
-            </div>
-          </div>
-        </div>
+        <img src="${routePath('/assets/images/landing-mockup.png')}" alt="Vista previa de GuiaAbierta en un movil iPhone">
       </div>
     </section>
     <section class="info-grid section">

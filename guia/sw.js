@@ -1,16 +1,17 @@
-const CACHE_NAME = 'guiaabierta-v20260629-1';
+const CACHE_NAME = 'guiaabierta-v20260629-2';
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './assets/css/styles.css?v=20260629-1',
-  './assets/js/app.js?v=20260629-1',
+  './assets/css/styles.css?v=20260629-2',
+  './assets/js/app.js?v=20260629-2',
   './assets/js/config.js',
   './assets/js/demo-data.js',
   './assets/js/supabase-client.js',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',
-  './assets/icons/favicon-32.png'
+  './assets/icons/favicon-32.png',
+  './assets/images/landing-mockup.png'
 ];
 
 self.addEventListener('install', (event) => {
