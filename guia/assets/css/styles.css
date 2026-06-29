@@ -516,6 +516,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
   gap: 1rem;
 }
 .admin-media-section h3 { margin: 0; }
+.admin-media-new-button {
+  width: 160px;
+  flex: 0 0 160px;
+}
 .admin-media-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, 180px);

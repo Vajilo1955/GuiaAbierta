@@ -850,7 +850,7 @@ function renderAdminMediaSections(elementId) {
           <section class="admin-media-section">
             <div class="admin-media-section-head">
               <h3>${group.title}</h3>
-              <a class="button primary" href="${routePath(`/admin/elementos/${elementId}/media/nuevo/?tipo=${group.kind}`)}">${newMediaLabel(group.kind)}</a>
+              <a class="button primary admin-media-new-button" href="${routePath(`/admin/elementos/${elementId}/media/nuevo/?tipo=${group.kind}`)}">${newMediaLabel(group.kind)}</a>
             </div>
             ${items.length ? renderAdminMediaGroup(group.kind, items) : emptyState(group.empty)}
           </section>
