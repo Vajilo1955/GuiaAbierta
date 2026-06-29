@@ -837,6 +837,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
     width: calc(100% - 1rem);
     max-width: 420px;
   }
+  .detail .audio-card h3 { font-size: clamp(.85rem, 2.4vw, 1rem); }
   .detail-head .actions {
     flex-wrap: nowrap;
     align-items: center;
