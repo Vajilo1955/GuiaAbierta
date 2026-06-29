@@ -572,6 +572,9 @@ async function renderAdmin(parts = []) {
 function adminFrame(title, subtitle, body, actions = '') {
   app.innerHTML = `
     <section class="admin-shell">
+      <div class="admin-top-actions">
+        <button class="icon-action admin-logout-action" type="button" data-command="logout" aria-label="Cerrar sesion" title="Cerrar sesion">${icon('logout')}</button>
+      </div>
       <div class="admin-head">
         <div>
           <p class="eyebrow">Administracion</p>
@@ -580,7 +583,6 @@ function adminFrame(title, subtitle, body, actions = '') {
         </div>
         <div class="admin-head-actions">
           ${actions}
-          <button class="icon-action admin-logout-action" type="button" data-command="logout" aria-label="Cerrar sesion" title="Cerrar sesion">${icon('logout')}</button>
         </div>
       </div>
       ${body}
