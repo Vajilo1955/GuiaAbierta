@@ -480,6 +480,7 @@ function renderElement(projectSlug, elementSlug) {
           <p>${escapeHtml(element.short_description || '')}</p>
           <div class="actions">
             ${hasMoreInfo ? `<button class="button primary" type="button" data-command="show-more" data-element="${escapeAttr(element.id)}">+ info</button>` : ''}
+            ${state.session ? `<a class="map-icon-link detail-admin-link" href="${routePath(`/admin/elementos/${element.id}/`)}" aria-label="Editar ${escapeAttr(element.title)}" title="Editar elemento">${icon('edit')}</a>` : ''}
             ${element.maps_url ? `<a class="map-icon-link detail-map-link" href="${escapeAttr(element.maps_url)}" target="_blank" rel="noreferrer" aria-label="Como llegar a ${escapeAttr(element.title)}" title="Como llegar">${icon('location')}</a>` : ''}
           </div>
         </div>

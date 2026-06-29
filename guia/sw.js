@@ -1,10 +1,10 @@
-const CACHE_NAME = 'guiaabierta-v20260629-2';
+const CACHE_NAME = 'guiaabierta-v20260629-3';
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './assets/css/styles.css?v=20260629-2',
-  './assets/js/app.js?v=20260629-2',
+  './assets/css/styles.css?v=20260629-3',
+  './assets/js/app.js?v=20260629-3',
   './assets/js/config.js',
   './assets/js/demo-data.js',
   './assets/js/supabase-client.js',

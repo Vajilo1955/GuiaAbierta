@@ -282,7 +282,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   text-align: right;
   white-space: nowrap;
 }
-.detail-map-link {
+.detail-map-link, .detail-admin-link {
   margin-left: .15rem;
 }
 .detail-head {
@@ -839,11 +839,13 @@ button, a { -webkit-tap-highlight-color: transparent; }
     gap: .55rem;
   }
   .detail-head .actions .button {
-    width: 75%;
+    flex: 1 1 auto;
+    width: auto;
     min-height: 40px;
     padding: .55rem .85rem;
   }
-  .detail-head .actions .detail-map-link {
+  .detail-head .actions .detail-map-link,
+  .detail-head .actions .detail-admin-link {
     width: 40px;
     height: 40px;
     margin-left: 0;
